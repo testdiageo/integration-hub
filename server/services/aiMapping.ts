@@ -213,6 +213,7 @@ Respond with JSON in this format:
   "testCases": "array_of_test_cases_with_input_output"
 }`;
 
+      console.log('[AI CODE GEN] Sending request to OpenAI...');
       const response = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
@@ -225,11 +226,15 @@ Respond with JSON in this format:
             content: prompt
           }
         ],
-
+        temperature: 0.3,
+        max_tokens: 2000
       });
+
+      console.log('[AI CODE GEN] Received response from OpenAI');
 
       // Clean up response content and extract JSON
       let content = response.choices[0].message.content || '{}';
+      console.log('[AI CODE GEN] Raw response content:', content.substring(0, 500) + (content.length > 500 ? '...' : ''));
       
       // Remove markdown code fencing
       content = content.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '');
@@ -243,6 +248,8 @@ Respond with JSON in this format:
       if (jsonMatch) {
         content = jsonMatch[0];
       }
+      
+      console.log('[AI CODE GEN] Cleaned content for parsing:', content.substring(0, 300) + (content.length > 300 ? '...' : ''));
       
       // Try to parse JSON with fallback error handling
       let result;
@@ -260,7 +267,10 @@ Respond with JSON in this format:
           result = JSON.parse(fixedContent);
         } catch (secondParseError) {
           // If all else fails, return a default structure
-          console.error('Failed to parse AI response JSON:', parseError instanceof Error ? parseError.message : 'Unknown error');
+          console.error('[AI CODE GEN] Failed to parse AI response JSON - First error:', parseError instanceof Error ? parseError.message : 'Unknown error');
+          console.error('[AI CODE GEN] Failed to parse AI response JSON - Second error:', secondParseError instanceof Error ? secondParseError.message : 'Unknown error');
+          console.error('[AI CODE GEN] Problematic content:', content);
+          
           result = {
             pythonCode: "# Code generation failed - invalid JSON response",
             apiSpec: {},

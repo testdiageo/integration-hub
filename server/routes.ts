@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
@@ -130,6 +130,8 @@ ${mappings.map((m, index) => `
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(path.resolve('uploads')));
   
   // Create new integration project
   app.post("/api/projects", async (req, res) => {
@@ -608,10 +610,15 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   // Enhanced XSLT validation (compares target, mapping, and XSLT files)
   app.post("/api/projects/:id/validate-generated", async (req, res) => {
     try {
+      console.log(`[VALIDATION] Starting validation for project ${req.params.id}`);
+      
       const files = await storage.getFilesByProject(req.params.id);
       const targetFile = files.find(f => f.systemType === "target");
       
+      console.log(`[VALIDATION] Found ${files.length} files, targetFile:`, targetFile?.fileName);
+      
       if (!targetFile) {
+        console.log(`[VALIDATION] No target file found`);
         return res.status(400).json({ 
           message: "Target file not found. Please upload target file first." 
         });
@@ -622,18 +629,38 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
       const xsltPath = path.join(generatedDir, 'transformation.xsl');
       const mappingPath = path.join(generatedDir, 'field-mappings.csv');
       
+      console.log(`[VALIDATION] Checking paths:`, { generatedDir, xsltPath, mappingPath });
+      console.log(`[VALIDATION] Files exist:`, { 
+        xslt: fs.existsSync(xsltPath), 
+        mapping: fs.existsSync(mappingPath) 
+      });
+      
       // Check if generated files exist
       if (!fs.existsSync(xsltPath) || !fs.existsSync(mappingPath)) {
+        console.log(`[VALIDATION] Generated files missing`);
         return res.status(400).json({ 
           message: "Generated files not found. Please generate transformation files first." 
         });
       }
+
+      console.log(`[VALIDATION] Calling validateGeneratedFiles with:`, {
+        targetPath: targetFile.filePath,
+        mappingPath,
+        xsltPath
+      });
 
       const result = await XSLTValidatorService.validateGeneratedFiles(
         targetFile.filePath,
         mappingPath,
         xsltPath
       );
+      
+      console.log(`[VALIDATION] Validation result:`, {
+        isValid: result.isValid,
+        errorsCount: result.errors.length,
+        warningsCount: result.warnings.length,
+        confidence: result.confidenceScore
+      });
 
       // Save validation results
       const validationData = {

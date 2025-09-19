@@ -1,0 +1,3 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"id","id","auto","100%","{""typeConversion"":""No change required"",""formatChange"":""No change required""}"
+"name","","unmapped","0%","{""typeConversion"":""Not applicable"",""formatChange"":""Not applicable""}"

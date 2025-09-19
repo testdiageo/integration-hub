@@ -1,0 +1,47 @@
+# Field Mapping Documentation
+
+## Project Overview
+Generated on: 2025-09-19T16:01:58.005Z
+
+## Source System
+File: sample-source.csv
+Type: csv
+Records: ~2
+
+## Target System  
+File: sample-target.csv
+Type: csv
+Records: ~2
+
+## Field Mappings
+
+
+### 1. id → uid
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 2. name → full_name
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+## Summary
+- Total mappings: 2
+- Auto-mapped: 1
+- Suggested: 1
+- Manual: 0
+- Unmapped: 0
+
+## Usage Instructions
+1. Apply the generated XSLT transformation to your source XML data
+2. Validate the output against your target schema
+3. Adjust mappings as needed for your specific use case
