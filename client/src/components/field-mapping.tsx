@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type FieldMapping } from "@shared/schema";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface FieldMappingProps {
   projectId: string;
@@ -48,6 +48,7 @@ export function FieldMappingComponent({
   const [error, setError] = useState<string | null>(null);
   const [editingMapping, setEditingMapping] = useState<FieldMapping | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch project files to get target field options
   const { data: projectFiles } = useQuery({
@@ -94,6 +95,11 @@ export function FieldMappingComponent({
         m.id === mappingId ? updatedMapping : m
       );
       onMappingsUpdated(newMappings);
+      
+      // Invalidate and refetch mappings to ensure UI is updated
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/projects", projectId, "mappings"],
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update mapping");
     }
@@ -396,7 +402,7 @@ interface MappingEditorProps {
 }
 
 function MappingEditor({ mapping, projectFiles, onSave, onCancel }: MappingEditorProps) {
-  const [targetField, setTargetField] = useState(mapping.targetField || "");
+  const [targetField, setTargetField] = useState(mapping.targetField || "none");
   const [confidence, setConfidence] = useState(mapping.confidence?.toString() || "50");
   const [mappingType, setMappingType] = useState(mapping.mappingType);
 
@@ -406,9 +412,9 @@ function MappingEditor({ mapping, projectFiles, onSave, onCancel }: MappingEdito
 
   const handleSave = () => {
     const updates: Partial<FieldMapping> = {
-      targetField: targetField || null,
+      targetField: targetField === "none" ? null : targetField,
       confidence: parseInt(confidence),
-      mappingType: targetField ? (parseInt(confidence) >= 90 ? "auto" : "suggested") : "unmapped",
+      mappingType: (targetField !== "none") ? (parseInt(confidence) >= 90 ? "auto" : "suggested") : "unmapped",
     };
     onSave(updates);
   };
@@ -432,7 +438,7 @@ function MappingEditor({ mapping, projectFiles, onSave, onCancel }: MappingEdito
               <SelectValue placeholder="Select target field or leave unmapped" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">-- No mapping --</SelectItem>
+              <SelectItem value="none">-- No mapping --</SelectItem>
               {targetFields.map((field: string) => (
                 <SelectItem key={field} value={field}>
                   {field}
@@ -460,7 +466,7 @@ function MappingEditor({ mapping, projectFiles, onSave, onCancel }: MappingEdito
           <Label className="text-sm font-medium">Mapping Type</Label>
           <div className="mt-1">
             <Badge variant={mappingType === "auto" ? "default" : mappingType === "suggested" ? "secondary" : "destructive"}>
-              {targetField ? (parseInt(confidence) >= 90 ? "Auto Match" : "Suggested") : "Unmapped"}
+              {(targetField && targetField !== "none") ? (parseInt(confidence) >= 90 ? "Auto Match" : "Suggested") : "Unmapped"}
             </Badge>
           </div>
         </div>

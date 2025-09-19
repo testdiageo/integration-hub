@@ -86,13 +86,51 @@ export class AIMappingService {
       content = content.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '');
       content = content.replace(/```\s*/g, '');
       
+      // Remove control characters that can break JSON parsing
+      content = content.replace(/[\x00-\x1F\x7F]/g, '');
+      
       // Try to extract JSON from the response (handle cases where AI adds descriptive text)
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         content = jsonMatch[0];
       }
       
-      const result = JSON.parse(content);
+      // Try to parse JSON with enhanced error handling
+      let result;
+      try {
+        result = JSON.parse(content);
+      } catch (parseError) {
+        console.error('Failed to parse AI response JSON:', parseError instanceof Error ? parseError.message : 'Unknown error');
+        console.error('Content that failed to parse:', content);
+        
+        // Try to fix common JSON issues and retry
+        try {
+          // Fix unescaped quotes and trailing commas
+          let fixedContent = content
+            .replace(/,(\s*[}\]])/g, '$1') // Remove trailing commas
+            .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Quote unquoted keys
+            .replace(/:\s*([^",{\[\]}\s][^",{\[\]}\s]*?)([,}\]])/g, ': "$1"$2'); // Quote unquoted values
+            
+          result = JSON.parse(fixedContent);
+        } catch (secondParseError) {
+          // If all else fails, return a basic structure based on source schema
+          console.error('Second JSON parse attempt failed, falling back to basic mapping');
+          result = {
+            mappings: sourceSchema.fields.map(field => ({
+              sourceField: field.name,
+              targetField: null,
+              confidence: 10,
+              mappingType: "unmapped",
+              reasoning: "AI parsing failed, manual review required"
+            })),
+            analysis: {
+              overallConfidence: 10,
+              notes: "AI response parsing failed, please review mappings manually"
+            }
+          };
+        }
+      }
+      
       return this.processMappingResult(result);
 
     } catch (error) {
