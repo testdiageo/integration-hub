@@ -605,6 +605,59 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
     }
   });
 
+  // Enhanced XSLT validation (compares target, mapping, and XSLT files)
+  app.post("/api/projects/:id/validate-generated", async (req, res) => {
+    try {
+      const files = await storage.getFilesByProject(req.params.id);
+      const targetFile = files.find(f => f.systemType === "target");
+      
+      if (!targetFile) {
+        return res.status(400).json({ 
+          message: "Target file not found. Please upload target file first." 
+        });
+      }
+
+      // Paths to generated files
+      const generatedDir = path.join('uploads', 'generated', req.params.id);
+      const xsltPath = path.join(generatedDir, 'transformation.xsl');
+      const mappingPath = path.join(generatedDir, 'field-mappings.csv');
+      
+      // Check if generated files exist
+      if (!fs.existsSync(xsltPath) || !fs.existsSync(mappingPath)) {
+        return res.status(400).json({ 
+          message: "Generated files not found. Please generate transformation files first." 
+        });
+      }
+
+      const result = await XSLTValidatorService.validateGeneratedFiles(
+        targetFile.filePath,
+        mappingPath,
+        xsltPath
+      );
+
+      // Save validation results
+      const validationData = {
+        projectId: req.params.id,
+        isValid: result.isValid,
+        errors: result.errors,
+        warnings: result.warnings,
+        confidenceScore: result.confidenceScore,
+        matchesExpected: result.matchesExpected,
+        transformedData: result.transformedData
+      };
+
+      const validation = await storage.saveXSLTValidation(validationData);
+
+      // Update project status to validated
+      await storage.updateProject(req.params.id, {
+        status: result.isValid ? "validated" : "validation_failed"
+      });
+
+      res.json(validation);
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
 
   // Download generated XSLT file
   app.get("/api/projects/:id/download/xslt", async (req, res) => {

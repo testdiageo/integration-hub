@@ -253,6 +253,229 @@ export class XSLTValidatorService {
   }
 
   /**
+   * Enhanced validation comparing target file, mapping file, and generated XSLT
+   */
+  static async validateGeneratedFiles(
+    targetFilePath: string,
+    mappingFilePath: string,
+    xsltPath: string
+  ): Promise<XSLTValidationResult> {
+    const result: XSLTValidationResult = {
+      isValid: false,
+      errors: [],
+      warnings: [],
+      confidenceScore: 0
+    };
+
+    try {
+      // Read all files
+      const targetContent = fs.readFileSync(targetFilePath, 'utf8');
+      const mappingContent = fs.readFileSync(mappingFilePath, 'utf8');
+      const xsltContent = fs.readFileSync(xsltPath, 'utf8');
+
+      // Parse target file based on its type
+      let targetData: any;
+      try {
+        if (targetFilePath.endsWith('.json')) {
+          targetData = JSON.parse(targetContent);
+        } else if (targetFilePath.endsWith('.csv')) {
+          targetData = this.parseCSVContent(targetContent);
+        } else {
+          result.warnings.push('Target file format not fully supported for validation');
+          targetData = {};
+        }
+      } catch (error) {
+        result.errors.push(`Failed to parse target file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return result;
+      }
+
+      // Parse mapping file (CSV format)
+      const mappingData = this.parseMappingCSV(mappingContent);
+      if (mappingData.length === 0) {
+        result.errors.push('Mapping file contains no valid mappings');
+        return result;
+      }
+
+      // Extract mappings from XSLT
+      const xsltMappings = this.extractXSLTMappings(xsltContent);
+      if (xsltMappings.length === 0) {
+        result.errors.push('XSLT file contains no valid field mappings');
+        return result;
+      }
+
+      // Validate XSLT structure
+      const xsltValidation = this.validateXSLTStructure(xsltContent);
+      if (!xsltValidation.isValid) {
+        result.errors.push(...xsltValidation.errors);
+        return result;
+      }
+
+      // Compare consistency between all three files
+      const consistency = this.validateConsistency(targetData, mappingData, xsltMappings);
+      
+      result.errors.push(...consistency.errors);
+      result.warnings.push(...consistency.warnings);
+      result.confidenceScore = consistency.confidence;
+      result.matchesExpected = consistency.isConsistent;
+      result.isValid = result.errors.length === 0 && consistency.isConsistent;
+      
+      return result;
+
+    } catch (error) {
+      result.errors.push(`Enhanced validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return result;
+    }
+  }
+
+  /**
+   * Parse CSV content into an array of objects
+   */
+  private static parseCSVContent(csvContent: string): any[] {
+    const lines = csvContent.trim().split('\n');
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    const data = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+      const obj: any = {};
+      headers.forEach((header, index) => {
+        obj[header] = values[index] || '';
+      });
+      data.push(obj);
+    }
+
+    return data;
+  }
+
+  /**
+   * Parse mapping CSV into structured mapping data
+   */
+  private static parseMappingCSV(csvContent: string): Array<{
+    sourceField: string;
+    targetField: string;
+    mappingType: string;
+    confidence: number;
+    transformation?: any;
+  }> {
+    const mappings = [];
+    const lines = csvContent.trim().split('\n');
+    
+    if (lines.length < 2) return [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const match = line.match(/"([^"]*?)","([^"]*?)","([^"]*?)","([^"]*?)","([^"]*)"/);
+      
+      if (match) {
+        const [, sourceField, targetField, mappingType, confidence, transformation] = match;
+        
+        let transformationObj = undefined;
+        if (transformation) {
+          try {
+            transformationObj = JSON.parse(transformation.replace(/""/g, '"'));
+          } catch (e) {
+            // Ignore transformation parsing errors
+          }
+        }
+
+        mappings.push({
+          sourceField: sourceField.trim(),
+          targetField: targetField.trim(),
+          mappingType: mappingType.trim(),
+          confidence: parseInt(confidence.replace('%', '')) || 0,
+          transformation: transformationObj
+        });
+      }
+    }
+
+    return mappings;
+  }
+
+  /**
+   * Validate consistency between target data, mapping file, and XSLT
+   */
+  private static validateConsistency(
+    targetData: any,
+    mappingData: any[],
+    xsltMappings: any[]
+  ): { isConsistent: boolean; confidence: number; errors: string[]; warnings: string[] } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    let consistencyScore = 0;
+    let totalChecks = 0;
+
+    // Get target fields from sample data
+    const targetFields = new Set<string>();
+    if (Array.isArray(targetData) && targetData.length > 0) {
+      Object.keys(targetData[0]).forEach(key => targetFields.add(key));
+    } else if (typeof targetData === 'object' && targetData !== null) {
+      Object.keys(targetData).forEach(key => targetFields.add(key));
+    }
+
+    // Check 1: Mapping file target fields should exist in target data
+    totalChecks++;
+    const mappedTargetFields = mappingData
+      .filter(m => m.targetField && m.targetField.trim())
+      .map(m => m.targetField.trim());
+    
+    const missingInTarget = mappedTargetFields.filter(field => !targetFields.has(field));
+    if (missingInTarget.length === 0) {
+      consistencyScore++;
+    } else {
+      errors.push(`Mapping file references target fields not found in target data: ${missingInTarget.join(', ')}`);
+    }
+
+    // Check 2: XSLT mappings should match mapping file
+    totalChecks++;
+    const xsltTargetFields = xsltMappings.map(m => m.targetField);
+    const mappingFileFields = mappingData.map(m => m.targetField).filter(f => f);
+    
+    const xsltMissingFromMapping = xsltTargetFields.filter(field => 
+      !mappingFileFields.some(mf => mf === field || mf.replace(/[^a-zA-Z0-9_-]/g, '_') === field)
+    );
+    
+    if (xsltMissingFromMapping.length === 0) {
+      consistencyScore++;
+    } else {
+      warnings.push(`XSLT contains mappings not found in mapping file: ${xsltMissingFromMapping.join(', ')}`);
+    }
+
+    // Check 3: Target data coverage
+    totalChecks++;
+    const coveredTargetFields = mappedTargetFields.filter(field => targetFields.has(field));
+    const coverageRatio = targetFields.size > 0 ? coveredTargetFields.length / targetFields.size : 0;
+    
+    if (coverageRatio >= 0.8) {
+      consistencyScore++;
+    } else if (coverageRatio >= 0.5) {
+      warnings.push(`Only ${Math.round(coverageRatio * 100)}% of target fields are covered by mappings`);
+    } else {
+      warnings.push(`Low field coverage: only ${Math.round(coverageRatio * 100)}% of target fields are mapped`);
+    }
+
+    // Check 4: XSLT structure validation
+    totalChecks++;
+    const hasValidXSLTStructure = xsltMappings.length > 0;
+    if (hasValidXSLTStructure) {
+      consistencyScore++;
+    } else {
+      errors.push('XSLT does not contain valid transformation mappings');
+    }
+
+    const confidence = totalChecks > 0 ? Math.round((consistencyScore / totalChecks) * 100) : 0;
+    const isConsistent = errors.length === 0 && confidence >= 80;
+
+    return {
+      isConsistent,
+      confidence,
+      errors,
+      warnings
+    };
+  }
+
+  /**
    * Extract field mappings from XSLT for analysis
    */
   static extractXSLTMappings(xsltContent: string): { sourceField: string; targetField: string; transformation?: string }[] {
