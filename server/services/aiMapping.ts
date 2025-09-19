@@ -1,0 +1,191 @@
+import OpenAI from "openai";
+import { DetectedSchema } from "./fileProcessor";
+
+// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "default_key" 
+});
+
+export interface FieldMappingSuggestion {
+  sourceField: string;
+  targetField: string | null;
+  confidence: number;
+  mappingType: "auto" | "suggested" | "manual" | "unmapped";
+  transformation?: {
+    typeConversion?: string;
+    formatChange?: string;
+    defaultValue?: any;
+    customLogic?: string;
+  };
+  reasoning?: string;
+}
+
+export interface MappingAnalysis {
+  mappings: FieldMappingSuggestion[];
+  overallConfidence: number;
+  autoMatches: number;
+  suggestedMatches: number;
+  manualReviewNeeded: number;
+}
+
+export class AIMappingService {
+  static async generateFieldMappings(
+    sourceSchema: DetectedSchema,
+    targetSchema: DetectedSchema
+  ): Promise<MappingAnalysis> {
+    try {
+      const prompt = this.buildMappingPrompt(sourceSchema, targetSchema);
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert data integration specialist. Analyze the source and target schemas and provide intelligent field mapping suggestions. Consider field names, data types, common naming patterns, and semantic similarity. 
+
+            Respond with JSON in this exact format:
+            {
+              "mappings": [
+                {
+                  "sourceField": "field_name",
+                  "targetField": "mapped_field_name_or_null",
+                  "confidence": 85,
+                  "mappingType": "auto|suggested|unmapped",
+                  "transformation": {
+                    "typeConversion": "string_to_integer",
+                    "formatChange": "description_if_needed"
+                  },
+                  "reasoning": "brief_explanation"
+                }
+              ],
+              "analysis": {
+                "overallConfidence": 78,
+                "notes": "overall_analysis_notes"
+              }
+            }
+
+            Confidence scoring:
+            - 90-100: Perfect semantic and type match (auto)
+            - 75-89: Good semantic match, minor differences (suggested)
+            - 50-74: Possible match, needs review (suggested)
+            - Below 50: No clear match (unmapped)
+            `
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      const result = JSON.parse(response.choices[0].message.content);
+      return this.processMappingResult(result);
+
+    } catch (error) {
+      throw new Error(`AI mapping failed: ${error.message}`);
+    }
+  }
+
+  private static buildMappingPrompt(sourceSchema: DetectedSchema, targetSchema: DetectedSchema): string {
+    return `Analyze these schemas for field mapping:
+
+SOURCE SCHEMA (${sourceSchema.format}):
+${sourceSchema.fields.map(f => `- ${f.name}: ${f.type}${f.sample ? ` (sample: ${JSON.stringify(f.sample)})` : ''}`).join('\n')}
+
+TARGET SCHEMA (${targetSchema.format}):
+${targetSchema.fields.map(f => `- ${f.name}: ${f.type}${f.sample ? ` (sample: ${JSON.stringify(f.sample)})` : ''}`).join('\n')}
+
+Please map each source field to the most appropriate target field. Consider:
+1. Exact name matches (highest confidence)
+2. Semantic similarity (e.g., "first_name" to "firstName")
+3. Type compatibility and required conversions
+4. Common business field patterns
+5. Fields that have no reasonable match should be marked as unmapped
+
+For each mapping, provide transformation details if type conversion or format changes are needed.`;
+  }
+
+  private static processMappingResult(result: any): MappingAnalysis {
+    const mappings: FieldMappingSuggestion[] = result.mappings.map((mapping: any) => ({
+      sourceField: mapping.sourceField,
+      targetField: mapping.targetField,
+      confidence: Math.min(100, Math.max(0, mapping.confidence || 0)),
+      mappingType: this.determineMappingType(mapping.confidence, mapping.targetField),
+      transformation: mapping.transformation,
+      reasoning: mapping.reasoning,
+    }));
+
+    const autoMatches = mappings.filter(m => m.mappingType === "auto").length;
+    const suggestedMatches = mappings.filter(m => m.mappingType === "suggested").length;
+    const manualReviewNeeded = mappings.filter(m => m.mappingType === "unmapped").length;
+
+    const overallConfidence = mappings.length > 0 
+      ? Math.round(mappings.reduce((sum, m) => sum + m.confidence, 0) / mappings.length)
+      : 0;
+
+    return {
+      mappings,
+      overallConfidence,
+      autoMatches,
+      suggestedMatches,
+      manualReviewNeeded,
+    };
+  }
+
+  private static determineMappingType(confidence: number, targetField: string | null): "auto" | "suggested" | "unmapped" {
+    if (!targetField) return "unmapped";
+    if (confidence >= 90) return "auto";
+    if (confidence >= 50) return "suggested";
+    return "unmapped";
+  }
+
+  static async generateTransformationCode(mappings: FieldMappingSuggestion[]): Promise<{
+    pythonCode: string;
+    apiSpec: any;
+    testCases: any[];
+  }> {
+    try {
+      const prompt = `Generate transformation code based on these field mappings:
+
+${mappings.map(m => `${m.sourceField} -> ${m.targetField} (${m.mappingType}, confidence: ${m.confidence}%)${m.transformation ? ` [Transform: ${JSON.stringify(m.transformation)}]` : ''}`).join('\n')}
+
+Please provide:
+1. Python transformation function
+2. OpenAPI specification for the integration
+3. Test cases for validation
+
+Respond with JSON in this format:
+{
+  "pythonCode": "complete_python_transformation_function",
+  "apiSpec": "openapi_3_0_specification_object",
+  "testCases": "array_of_test_cases_with_input_output"
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert software engineer specializing in data transformation and API design. Generate production-ready code with proper error handling, type validation, and comprehensive test coverage."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      const result = JSON.parse(response.choices[0].message.content);
+      return {
+        pythonCode: result.pythonCode || "# Generated transformation code would appear here",
+        apiSpec: result.apiSpec || {},
+        testCases: result.testCases || [],
+      };
+
+    } catch (error) {
+      throw new Error(`Code generation failed: ${error.message}`);
+    }
+  }
+}
