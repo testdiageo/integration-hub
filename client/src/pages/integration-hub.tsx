@@ -205,19 +205,48 @@ export default function IntegrationHub() {
           <Card>
             <CardContent className="py-16">
               <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ArrowRightLeft className="h-8 w-8 text-green-600" />
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ArrowRightLeft className="h-8 w-8 text-blue-600" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4">Integration Ready!</h3>
+                <h3 className="text-2xl font-bold mb-4">Download Integration Assets</h3>
                 <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                  Your integration is configured and ready to deploy. All field mappings and transformations have been validated.
+                  Your integration mapping is complete. Download the mapping documentation and files for your implementation.
                 </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col items-center p-6 h-auto"
+                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/mapping-table`, '_blank')}
+                    data-testid="button-download-mapping-table"
+                  >
+                    <Save className="h-8 w-8 mb-2" />
+                    <span className="font-semibold">Mapping Table</span>
+                    <span className="text-xs text-muted-foreground">CSV format</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col items-center p-6 h-auto"
+                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/documentation`, '_blank')}
+                    data-testid="button-download-documentation"
+                  >
+                    <Save className="h-8 w-8 mb-2" />
+                    <span className="font-semibold">Documentation</span>
+                    <span className="text-xs text-muted-foreground">PDF format</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex flex-col items-center p-6 h-auto"
+                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/excel`, '_blank')}
+                    data-testid="button-download-excel"
+                  >
+                    <Save className="h-8 w-8 mb-2" />
+                    <span className="font-semibold">Excel File</span>
+                    <span className="text-xs text-muted-foreground">XLSX format</span>
+                  </Button>
+                </div>
                 <div className="flex justify-center space-x-4">
                   <Button variant="outline" onClick={() => setCurrentStep(3)}>
                     Review Settings
-                  </Button>
-                  <Button>
-                    Deploy to Production
                   </Button>
                 </div>
               </div>
