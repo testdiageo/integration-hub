@@ -93,7 +93,7 @@ export class FileProcessor {
         format: 'json',
       };
     } catch (error) {
-      throw new Error(`JSON parsing error: ${error.message}`);
+      throw new Error(`JSON parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -132,7 +132,7 @@ export class FileProcessor {
         format: 'xml',
       };
     } catch (error) {
-      throw new Error(`XML parsing error: ${error.message}`);
+      throw new Error(`XML parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -161,7 +161,7 @@ export class FileProcessor {
         format: 'excel',
       };
     } catch (error) {
-      throw new Error(`Excel parsing error: ${error.message}`);
+      throw new Error(`Excel parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

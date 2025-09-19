@@ -311,11 +311,11 @@ export function FieldMappingComponent({
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {mapping.transformation && (
+                    {mapping.transformation ? (
                       <span className="text-sm text-muted-foreground">
-                        {mapping.transformation.typeConversion || "No transform"}
+                        {(mapping.transformation as any)?.typeConversion || "No transform"}
                       </span>
-                    )}
+                    ) : null}
                     <Button
                       variant="ghost"
                       size="sm"

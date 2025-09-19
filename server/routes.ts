@@ -29,7 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const project = await storage.createProject(validatedData);
       res.json(project);
     } catch (error) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -39,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const projects = await storage.getProjects();
       res.json(projects);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -52,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(project);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -99,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fs.unlinkSync(req.file.path);
         } catch {}
       }
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const files = await storage.getFilesByProject(req.params.id);
       res.json(files);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deleteFile(req.params.id);
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -147,8 +147,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate AI mappings
       const mappingAnalysis = await AIMappingService.generateFieldMappings(
-        sourceFile.detectedSchema,
-        targetFile.detectedSchema
+        sourceFile.detectedSchema as any,
+        targetFile.detectedSchema as any
       );
 
       // Clear existing mappings
@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -194,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mappings = await storage.getMappingsByProject(req.params.id);
       res.json(mappings);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(updatedMapping);
     } catch (error) {
-      res.status(400).json({ message: error.message });
+      res.status(400).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -247,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(integrationCode);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -278,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(transformedData);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 

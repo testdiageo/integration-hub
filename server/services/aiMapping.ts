@@ -79,11 +79,11 @@ export class AIMappingService {
         response_format: { type: "json_object" },
       });
 
-      const result = JSON.parse(response.choices[0].message.content);
+      const result = JSON.parse(response.choices[0].message.content || '{}');
       return this.processMappingResult(result);
 
     } catch (error) {
-      throw new Error(`AI mapping failed: ${error.message}`);
+      throw new Error(`AI mapping failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -177,7 +177,7 @@ Respond with JSON in this format:
         response_format: { type: "json_object" },
       });
 
-      const result = JSON.parse(response.choices[0].message.content);
+      const result = JSON.parse(response.choices[0].message.content || '{}');
       return {
         pythonCode: result.pythonCode || "# Generated transformation code would appear here",
         apiSpec: result.apiSpec || {},
@@ -185,7 +185,7 @@ Respond with JSON in this format:
       };
 
     } catch (error) {
-      throw new Error(`Code generation failed: ${error.message}`);
+      throw new Error(`Code generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

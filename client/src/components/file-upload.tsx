@@ -175,8 +175,8 @@ export function FileUpload({
           </div>
           <div className="text-sm text-muted-foreground">
             <p>
-              Fields detected: {uploadedFile.detectedSchema?.fields?.length || 0} • 
-              Records: ~{uploadedFile.detectedSchema?.recordCount || 0}
+              Fields detected: {(uploadedFile.detectedSchema as any)?.fields?.length || 0} • 
+              Records: ~{(uploadedFile.detectedSchema as any)?.recordCount || 0}
             </p>
             <p data-testid={`schema-confidence-${systemType}`}>
               Schema confidence: {uploadedFile.schemaConfidence || 0}%

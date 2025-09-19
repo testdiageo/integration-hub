@@ -45,7 +45,14 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const now = new Date();
     const project: IntegrationProject = { 
-      ...insertProject, 
+      ...insertProject,
+      description: insertProject.description || null,
+      status: insertProject.status || "draft",
+      sourceSchema: insertProject.sourceSchema || null,
+      targetSchema: insertProject.targetSchema || null,
+      fieldMappings: insertProject.fieldMappings || null,
+      transformationLogic: insertProject.transformationLogic || null,
+      integrationCode: insertProject.integrationCode || null,
       id,
       createdAt: now,
       updatedAt: now,
@@ -85,7 +92,9 @@ export class MemStorage implements IStorage {
   async createFile(insertFile: InsertUploadedFile): Promise<UploadedFile> {
     const id = randomUUID();
     const file: UploadedFile = { 
-      ...insertFile, 
+      ...insertFile,
+      detectedSchema: insertFile.detectedSchema || null,
+      schemaConfidence: insertFile.schemaConfidence || null,
       id,
       uploadedAt: new Date(),
     };
@@ -111,7 +120,11 @@ export class MemStorage implements IStorage {
   async createMapping(insertMapping: InsertFieldMapping): Promise<FieldMapping> {
     const id = randomUUID();
     const mapping: FieldMapping = { 
-      ...insertMapping, 
+      ...insertMapping,
+      targetField: insertMapping.targetField || null,
+      confidence: insertMapping.confidence || null,
+      transformation: insertMapping.transformation || null,
+      isValidated: insertMapping.isValidated || null,
       id,
       createdAt: new Date(),
     };

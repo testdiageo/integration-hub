@@ -58,14 +58,14 @@ export default function IntegrationHub() {
     }
   }, []);
 
-  const sourceFile = files.find((f: UploadedFile) => f.systemType === "source");
-  const targetFile = files.find((f: UploadedFile) => f.systemType === "target");
+  const sourceFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "source");
+  const targetFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "target");
 
   const handleFileUploaded = (file: UploadedFile) => {
     refetchFiles();
     
     // Auto-advance to mapping step when both files are uploaded
-    if (currentStep === 1 && files.length === 1) {
+    if (currentStep === 1 && (files as UploadedFile[]).length === 1) {
       setCurrentStep(2);
     }
   };
@@ -91,13 +91,13 @@ export default function IntegrationHub() {
   };
 
   // Get analysis data from mappings
-  const analysisData = mappings.length > 0 ? {
+  const analysisData = (mappings as FieldMapping[]).length > 0 ? {
     overallConfidence: Math.round(
-      mappings.reduce((sum: number, m: FieldMapping) => sum + (m.confidence || 0), 0) / mappings.length
+      (mappings as FieldMapping[]).reduce((sum: number, m: FieldMapping) => sum + (m.confidence || 0), 0) / (mappings as FieldMapping[]).length
     ),
-    autoMatches: mappings.filter((m: FieldMapping) => m.mappingType === "auto").length,
-    suggestedMatches: mappings.filter((m: FieldMapping) => m.mappingType === "suggested").length,
-    manualReviewNeeded: mappings.filter((m: FieldMapping) => m.mappingType === "unmapped").length,
+    autoMatches: (mappings as FieldMapping[]).filter((m: FieldMapping) => m.mappingType === "auto").length,
+    suggestedMatches: (mappings as FieldMapping[]).filter((m: FieldMapping) => m.mappingType === "suggested").length,
+    manualReviewNeeded: (mappings as FieldMapping[]).filter((m: FieldMapping) => m.mappingType === "unmapped").length,
   } : undefined;
 
   if (!currentProject) {
@@ -186,7 +186,7 @@ export default function IntegrationHub() {
         {currentStep === 2 && (
           <FieldMappingComponent
             projectId={currentProject.id}
-            mappings={mappings}
+            mappings={mappings as FieldMapping[]}
             onMappingsUpdated={handleMappingsUpdated}
             onProceedToTransformation={handleProceedToTransformation}
             analysisData={analysisData}
