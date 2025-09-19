@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { 
   ArrowRight, 
   Edit, 
@@ -13,10 +17,12 @@ import {
   Expand, 
   Brain, 
   AlertTriangle, 
-  CheckCircle 
+  CheckCircle,
+  Save
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type FieldMapping } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 
 interface FieldMappingProps {
   projectId: string;
@@ -40,6 +46,13 @@ export function FieldMappingComponent({
 }: FieldMappingProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingMapping, setEditingMapping] = useState<FieldMapping | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Fetch project files to get target field options
+  const { data: projectFiles } = useQuery({
+    queryKey: ["/api/projects", projectId, "files"],
+  });
 
   const handleGenerateMappings = async () => {
     setIsGenerating(true);
@@ -245,7 +258,19 @@ export function FieldMappingComponent({
               <span className="text-sm text-muted-foreground" data-testid="overall-confidence">
                 Overall Confidence: {analysisData?.overallConfidence || 0}%
               </span>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  // Open editor for first unmapped field or create new mapping
+                  const unmappedField = mappings.find(m => m.mappingType === 'unmapped');
+                  if (unmappedField) {
+                    setEditingMapping(unmappedField);
+                    setIsDialogOpen(true);
+                  }
+                }}
+                data-testid="button-full-editor"
+              >
                 <Expand className="mr-2 h-4 w-4" />
                 Full Editor
               </Button>
@@ -320,8 +345,8 @@ export function FieldMappingComponent({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        // In a real implementation, this would open an edit dialog
-                        console.log("Edit mapping:", mapping.id);
+                        setEditingMapping(mapping);
+                        setIsDialogOpen(true);
                       }}
                       data-testid={`button-edit-mapping-${mapping.sourceField}`}
                     >
@@ -334,6 +359,122 @@ export function FieldMappingComponent({
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Mapping Editor Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl" data-testid="mapping-editor">
+          <DialogHeader>
+            <DialogTitle>Edit Field Mapping</DialogTitle>
+          </DialogHeader>
+          
+          {editingMapping && (
+            <MappingEditor
+              mapping={editingMapping}
+              projectFiles={Array.isArray(projectFiles) ? projectFiles : []}
+              onSave={(updatedMapping) => {
+                handleUpdateMapping(editingMapping.id, updatedMapping);
+                setIsDialogOpen(false);
+                setEditingMapping(null);
+              }}
+              onCancel={() => {
+                setIsDialogOpen(false);
+                setEditingMapping(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+interface MappingEditorProps {
+  mapping: FieldMapping;
+  projectFiles: any[];
+  onSave: (updates: Partial<FieldMapping>) => void;
+  onCancel: () => void;
+}
+
+function MappingEditor({ mapping, projectFiles, onSave, onCancel }: MappingEditorProps) {
+  const [targetField, setTargetField] = useState(mapping.targetField || "");
+  const [confidence, setConfidence] = useState(mapping.confidence?.toString() || "50");
+  const [mappingType, setMappingType] = useState(mapping.mappingType);
+
+  // Get target schema fields
+  const targetFile = projectFiles.find(f => f.systemType === "target");
+  const targetFields = targetFile?.detectedSchema?.fields?.map((f: any) => f.name) || [];
+
+  const handleSave = () => {
+    const updates: Partial<FieldMapping> = {
+      targetField: targetField || null,
+      confidence: parseInt(confidence),
+      mappingType: targetField ? (parseInt(confidence) >= 90 ? "auto" : "suggested") : "unmapped",
+    };
+    onSave(updates);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div>
+          <Label className="text-sm font-medium">Source Field</Label>
+          <div className="mt-1">
+            <Badge variant="outline" className="bg-green-100 text-green-800 font-mono">
+              {mapping.sourceField}
+            </Badge>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="target-field" className="text-sm font-medium">Target Field</Label>
+          <Select value={targetField} onValueChange={setTargetField}>
+            <SelectTrigger className="mt-1" data-testid="select-target-field">
+              <SelectValue placeholder="Select target field or leave unmapped" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">-- No mapping --</SelectItem>
+              {targetFields.map((field: string) => (
+                <SelectItem key={field} value={field}>
+                  {field}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="confidence" className="text-sm font-medium">Confidence Score (%)</Label>
+          <Input
+            id="confidence"
+            type="number"
+            min="0"
+            max="100"
+            value={confidence}
+            onChange={(e) => setConfidence(e.target.value)}
+            className="mt-1"
+            data-testid="input-confidence"
+          />
+        </div>
+
+        <div>
+          <Label className="text-sm font-medium">Mapping Type</Label>
+          <div className="mt-1">
+            <Badge variant={mappingType === "auto" ? "default" : mappingType === "suggested" ? "secondary" : "destructive"}>
+              {targetField ? (parseInt(confidence) >= 90 ? "Auto Match" : "Suggested") : "Unmapped"}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        <Button variant="outline" onClick={onCancel} data-testid="button-cancel-mapping">
+          Cancel
+        </Button>
+        <Button onClick={handleSave} data-testid="button-save-mapping">
+          <Save className="mr-2 h-4 w-4" />
+          Save Mapping
+        </Button>
+      </div>
     </div>
   );
 }
