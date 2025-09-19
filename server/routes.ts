@@ -22,6 +22,112 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
+// Helper function to generate XSLT content
+function generateXSLTContent(mappings: any[]): string {
+  const sanitizeFieldName = (fieldName: string): string => {
+    return fieldName
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .replace(/^[^a-zA-Z_]/, '_')
+      .replace(/^$/, '_empty_');
+  };
+
+  const escapeXPathString = (str: string): string => {
+    if (!str.includes("'")) {
+      return `'${str}'`;
+    } else if (!str.includes('"')) {
+      return `"${str}"`;
+    } else {
+      const parts = str.split("'").map(part => `'${part}'`);
+      return `concat(${parts.join(", \"'\", ")})`;
+    }
+  };
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="xml" indent="yes"/>
+  
+  <!-- Root template -->
+  <xsl:template match="/">
+    <root>
+      <xsl:apply-templates select="//record"/>
+    </root>
+  </xsl:template>
+  
+  <!-- Record transformation template -->
+  <xsl:template match="record">
+    <transformedRecord>
+${mappings.filter(m => m.targetField).map(mapping => {
+  const sourceFieldSafe = sanitizeFieldName(mapping.sourceField);
+  const targetFieldSafe = sanitizeFieldName(mapping.targetField!);
+  const sourceFieldEscaped = escapeXPathString(mapping.sourceField);
+  
+  if (mapping.transformation) {
+    const transform = mapping.transformation as any;
+    if (transform.typeConversion === 'string_to_integer') {
+      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="number(*[local-name()=${sourceFieldEscaped}])"/></xsl:element>`;
+    } else if (transform.formatChange && transform.formatChange.includes('ISO')) {
+      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="translate(*[local-name()=${sourceFieldEscaped}], ' ', 'T')"/></xsl:element>`;
+    }
+  }
+  
+  return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="*[local-name()=${sourceFieldEscaped}]"/></xsl:element>`;
+}).join('\n')}
+    </transformedRecord>
+  </xsl:template>
+</xsl:stylesheet>`;
+}
+
+// Helper function to generate mapping CSV
+function generateMappingCSV(mappings: any[]): string {
+  const header = "Source Field,Target Field,Mapping Type,Confidence,Transformation";
+  const rows = mappings.map(m => 
+    `"${m.sourceField}","${m.targetField || ''}","${m.mappingType}","${m.confidence || 0}%","${m.transformation ? JSON.stringify(m.transformation).replace(/"/g, '""') : ''}"`
+  );
+  return [header, ...rows].join('\n');
+}
+
+// Helper function to generate mapping document
+function generateMappingDocument(mappings: any[], files: any[]): string {
+  const sourceFile = files.find((f: any) => f.systemType === "source");
+  const targetFile = files.find((f: any) => f.systemType === "target");
+  
+  return `# Field Mapping Documentation
+
+## Project Overview
+Generated on: ${new Date().toISOString()}
+
+## Source System
+File: ${sourceFile?.fileName || 'Unknown'}
+Type: ${sourceFile?.fileType || 'Unknown'}
+Records: ~${(sourceFile?.detectedSchema as any)?.recordCount || 0}
+
+## Target System  
+File: ${targetFile?.fileName || 'Unknown'}
+Type: ${targetFile?.fileType || 'Unknown'}
+Records: ~${(targetFile?.detectedSchema as any)?.recordCount || 0}
+
+## Field Mappings
+
+${mappings.map((m, index) => `
+### ${index + 1}. ${m.sourceField} → ${m.targetField || 'Unmapped'}
+- **Mapping Type**: ${m.mappingType}
+- **Confidence**: ${m.confidence || 0}%
+- **Transformation**: ${m.transformation ? JSON.stringify(m.transformation, null, 2) : 'None'}
+`).join('\n')}
+
+## Summary
+- Total mappings: ${mappings.length}
+- Auto-mapped: ${mappings.filter(m => m.mappingType === 'auto').length}
+- Suggested: ${mappings.filter(m => m.mappingType === 'suggested').length}
+- Manual: ${mappings.filter(m => m.mappingType === 'manual').length}
+- Unmapped: ${mappings.filter(m => m.mappingType === 'unmapped').length}
+
+## Usage Instructions
+1. Apply the generated XSLT transformation to your source XML data
+2. Validate the output against your target schema
+3. Adjust mappings as needed for your specific use case
+`;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -251,6 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/projects/:id/generate-code", async (req, res) => {
     try {
       const mappings = await storage.getMappingsByProject(req.params.id);
+      const files = await storage.getFilesByProject(req.params.id);
       
       if (mappings.length === 0) {
         return res.status(400).json({ 
@@ -269,13 +376,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const integrationCode = await AIMappingService.generateTransformationCode(mappingSuggestions);
 
-      // Update project with generated code
+      // Generate and save XSLT file
+      const xsltContent = await generateXSLTContent(mappings);
+      const xsltDir = path.join('uploads', 'generated', req.params.id);
+      if (!fs.existsSync(xsltDir)) {
+        fs.mkdirSync(xsltDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(xsltDir, 'transformation.xsl'), xsltContent);
+
+      // Generate and save mapping file (CSV format)
+      const mappingCSV = generateMappingCSV(mappings);
+      fs.writeFileSync(path.join(xsltDir, 'field-mappings.csv'), mappingCSV);
+
+      // Generate and save mapping document (human-readable)
+      const mappingDocument = generateMappingDocument(mappings, files);
+      fs.writeFileSync(path.join(xsltDir, 'mapping-documentation.txt'), mappingDocument);
+
+      // Update project with generated code and file generation status
       await storage.updateProject(req.params.id, {
-        status: "ready",
+        status: "generated",
         integrationCode,
       });
 
-      res.json(integrationCode);
+      res.json({ 
+        ...integrationCode,
+        filesGenerated: {
+          xslt: 'transformation.xsl',
+          mappingFile: 'field-mappings.csv',
+          mappingDocument: 'mapping-documentation.txt'
+        }
+      });
     } catch (error) {
       res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
@@ -476,89 +606,99 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   });
 
 
-  // Download XSLT transformation file
+  // Download generated XSLT file
   app.get("/api/projects/:id/download/xslt", async (req, res) => {
     try {
-      const mappings = await storage.getMappingsByProject(req.params.id);
-      const files = await storage.getFilesByProject(req.params.id);
+      const xsltPath = path.join('uploads', 'generated', req.params.id, 'transformation.xsl');
       
-      if (mappings.length === 0) {
-        return res.status(400).json({ 
-          message: "No field mappings found. Generate mappings first." 
+      if (!fs.existsSync(xsltPath)) {
+        return res.status(404).json({ 
+          message: "XSLT file not found. Generate transformation files first." 
         });
       }
 
-      const sourceFile = files.find(f => f.systemType === "source");
-      const targetFile = files.find(f => f.systemType === "target");
-
-      // Helper function to sanitize field names for XML
-      const sanitizeFieldName = (fieldName: string): string => {
-        return fieldName
-          .replace(/[^a-zA-Z0-9_-]/g, '_')
-          .replace(/^[^a-zA-Z_]/, '_')
-          .replace(/^$/, '_empty_');
-      };
-
-      // Helper function to escape XPath string literals
-      const escapeXPathString = (str: string): string => {
-        if (!str.includes("'")) {
-          return `'${str}'`;
-        } else if (!str.includes('"')) {
-          return `"${str}"`;
-        } else {
-          // Use concat() for strings containing both quote types
-          const parts = str.split("'").map(part => `'${part}'`);
-          return `concat(${parts.join(", \"'\", ")})`;
-        }
-      };
-
-      // Generate XSLT transformation
-      const xsltContent = `<?xml version="1.0" encoding="UTF-8"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-  <xsl:output method="xml" indent="yes"/>
-  
-  <!-- Root template -->
-  <xsl:template match="/">
-    <root>
-      <xsl:apply-templates select="//record"/>
-    </root>
-  </xsl:template>
-  
-  <!-- Record transformation template -->
-  <xsl:template match="record">
-    <transformedRecord>
-${mappings.filter(m => m.targetField).map(mapping => {
-  const sourceFieldSafe = sanitizeFieldName(mapping.sourceField);
-  const targetFieldSafe = sanitizeFieldName(mapping.targetField!);
-  const sourceFieldEscaped = escapeXPathString(mapping.sourceField);
-  
-  if (mapping.transformation) {
-    const transform = mapping.transformation as any;
-    if (transform.typeConversion === 'string_to_integer') {
-      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="number(*[local-name()=${sourceFieldEscaped}])"/></xsl:element>`;
-    } else if (transform.formatChange && transform.formatChange.includes('ISO')) {
-      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="translate(*[local-name()=${sourceFieldEscaped}], ' ', 'T')"/></xsl:element>`;
-    }
-  }
-  
-  return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="*[local-name()=${sourceFieldEscaped}]"/></xsl:element>`;
-}).join('\n')}
-${mappings.filter(m => !m.targetField && m.mappingType !== 'unmapped').map(mapping => 
-  `      <!-- Unmapped field: ${mapping.sourceField} -->`
-).join('\n')}
-    </transformedRecord>
-  </xsl:template>
-  
-</xsl:stylesheet>`;
-
-      res.setHeader('Content-Type', 'application/xslt+xml');
-      res.setHeader('Content-Disposition', 'attachment; filename="field-transformation.xsl"');
-      res.send(xsltContent);
+      res.setHeader('Content-Type', 'application/xml');
+      res.setHeader('Content-Disposition', 'attachment; filename="transformation.xsl"');
+      res.sendFile(path.resolve(xsltPath));
     } catch (error) {
       res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  // Download generated mapping file (CSV)
+  app.get("/api/projects/:id/download/mapping-file", async (req, res) => {
+    try {
+      const mappingPath = path.join('uploads', 'generated', req.params.id, 'field-mappings.csv');
+      
+      if (!fs.existsSync(mappingPath)) {
+        return res.status(404).json({ 
+          message: "Mapping file not found. Generate transformation files first." 
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="field-mappings.csv"');
+      res.sendFile(path.resolve(mappingPath));
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Download generated mapping document
+  app.get("/api/projects/:id/download/mapping-document", async (req, res) => {
+    try {
+      const documentPath = path.join('uploads', 'generated', req.params.id, 'mapping-documentation.txt');
+      
+      if (!fs.existsSync(documentPath)) {
+        return res.status(404).json({ 
+          message: "Mapping document not found. Generate transformation files first." 
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', 'attachment; filename="mapping-documentation.txt"');
+      res.sendFile(path.resolve(documentPath));
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Legacy download endpoints (keeping for compatibility)
+  app.get("/api/projects/:id/download/mapping-table", async (req, res) => {
+    try {
+      const mappingPath = path.join('uploads', 'generated', req.params.id, 'field-mappings.csv');
+      
+      if (!fs.existsSync(mappingPath)) {
+        return res.status(404).json({ 
+          message: "Mapping file not found. Generate transformation files first." 
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="field-mappings.csv"');
+      res.sendFile(path.resolve(mappingPath));
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get("/api/projects/:id/download/documentation", async (req, res) => {
+    try {
+      const documentPath = path.join('uploads', 'generated', req.params.id, 'mapping-documentation.txt');
+      
+      if (!fs.existsSync(documentPath)) {
+        return res.status(404).json({ 
+          message: "Documentation not found. Generate transformation files first." 
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', 'attachment; filename="mapping-documentation.txt"');
+      res.sendFile(path.resolve(documentPath));
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  return createServer(app);
 }
