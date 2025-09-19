@@ -21,7 +21,25 @@ const steps = [
 export default function IntegrationHub() {
   const [currentStep, setCurrentStep] = useState(1);
   const [currentProject, setCurrentProject] = useState<IntegrationProject | null>(null);
+  const [hasInitializedStep, setHasInitializedStep] = useState(false);
   const queryClient = useQueryClient();
+
+  // Load existing project from localStorage
+  const loadProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const response = await apiRequest("GET", `/api/projects/${projectId}`);
+      return response.json();
+    },
+    onSuccess: (project) => {
+      setCurrentProject(project);
+      localStorage.setItem('integrationhub-current-project', project.id);
+    },
+    onError: () => {
+      // If project doesn't exist, remove from localStorage and create new
+      localStorage.removeItem('integrationhub-current-project');
+      createProjectMutation.mutate();
+    },
+  });
 
   // Create initial project
   const createProjectMutation = useMutation({
@@ -35,6 +53,7 @@ export default function IntegrationHub() {
     },
     onSuccess: (project) => {
       setCurrentProject(project);
+      localStorage.setItem('integrationhub-current-project', project.id);
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     },
   });
@@ -52,20 +71,56 @@ export default function IntegrationHub() {
   });
 
   useEffect(() => {
-    // Create project on component mount
+    // Check for existing project in localStorage first
     if (!currentProject) {
-      createProjectMutation.mutate();
+      const savedProjectId = localStorage.getItem('integrationhub-current-project');
+      if (savedProjectId) {
+        loadProjectMutation.mutate(savedProjectId);
+      } else {
+        createProjectMutation.mutate();
+      }
     }
   }, []);
+
+  // Auto-advance to correct step based on loaded data (only on initial load)
+  useEffect(() => {
+    if (currentProject && files && mappings && !hasInitializedStep) {
+      const sourceFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "source");
+      const targetFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "target");
+      
+      // If project has integration code, go to step 4
+      if (currentProject.integrationCode) {
+        setCurrentStep(4);
+      }
+      // If both files are uploaded and mappings exist, go to step 2
+      else if (sourceFile && targetFile && (mappings as FieldMapping[]).length > 0) {
+        setCurrentStep(2);
+      }
+      // If both files are uploaded but no mappings, go to step 2 to allow mapping generation
+      else if (sourceFile && targetFile) {
+        setCurrentStep(2);
+      }
+      // Default to step 1 for new projects
+      else {
+        setCurrentStep(1);
+      }
+      
+      setHasInitializedStep(true);
+    }
+  }, [currentProject, files, mappings, hasInitializedStep]);
 
   const sourceFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "source");
   const targetFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "target");
 
-  const handleFileUploaded = (file: UploadedFile) => {
-    refetchFiles();
+  const handleFileUploaded = async (file: UploadedFile) => {
+    await refetchFiles();
     
     // Auto-advance to mapping step when both files are uploaded
-    if (currentStep === 1 && (files as UploadedFile[]).length === 1) {
+    const updatedFiles = await refetchFiles();
+    const sourceFile = (updatedFiles.data as UploadedFile[])?.find((f: UploadedFile) => f.systemType === "source");
+    const targetFile = (updatedFiles.data as UploadedFile[])?.find((f: UploadedFile) => f.systemType === "target");
+    
+    if (currentStep === 1 && sourceFile && targetFile) {
       setCurrentStep(2);
     }
   };

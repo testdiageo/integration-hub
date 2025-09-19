@@ -79,7 +79,7 @@ export const generateMappingSchema = z.object({
 export const updateMappingSchema = z.object({
   mappingId: z.string(),
   targetField: z.string().optional(),
-  mappingType: z.enum(["auto", "suggested", "manual", "unmapped"]),
-  confidence: z.number().min(0).max(100).optional(),
+  mappingType: z.enum(["auto", "suggested", "manual", "unmapped"]).optional(),
+  confidence: z.number().int().min(0).max(100).optional(),
   transformation: z.record(z.any()).optional(),
 });
