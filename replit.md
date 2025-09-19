@@ -2,7 +2,7 @@
 
 ## Overview
 
-Integration Hub is a full-stack web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. The system allows users to upload data files from source and target systems, automatically detects schemas, generates AI-powered field mappings, and produces integration code for seamless data transformation.
+Integration Hub is a full-stack web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. The system features a comprehensive 5-step workflow: users upload source and target data files, validate XSLT transformations, generate AI-powered field mappings, generate transformation logic, and deploy integrations. The application includes XSLT validation capabilities that allow users to test XML transformations against expected outputs with detailed confidence scoring and error reporting.
 
 ## User Preferences
 
@@ -33,15 +33,17 @@ Preferred communication style: Simple, everyday language.
 - **File Storage**: Local file system storage for uploaded files with configurable upload limits
 
 ### Database Schema Design
-- **Integration Projects**: Central entity storing project metadata, schemas, and transformation logic
-- **Uploaded Files**: File metadata with detected schema information and confidence scores
+- **Integration Projects**: Central entity storing project metadata, schemas, transformation logic, and XSLT validation results
+- **Uploaded Files**: File metadata with detected schema information and confidence scores, supporting multiple system types including XSLT validation files
 - **Field Mappings**: Granular field-to-field mapping relationships with AI confidence scores and validation status
+- **XSLT Validation**: Stores validation results with confidence scores, warnings, errors, and transformation match status
 - **Schema Versioning**: JSON-based schema storage allowing flexible data structure evolution
 
 ### AI Integration and Processing
 - **AI Service**: OpenAI GPT-4 integration for intelligent field mapping suggestions
 - **File Analysis**: Automated schema detection supporting multiple file formats (CSV, JSON, XML, Excel)
-- **Confidence Scoring**: AI-generated confidence scores for mapping quality assessment
+- **XSLT Validation**: Real XSLT transformation testing with XML parsing, structure validation, and expected output comparison
+- **Confidence Scoring**: AI-generated confidence scores for mapping quality assessment and XSLT transformation accuracy
 - **Transformation Logic**: Automated generation of data transformation code based on field mappings
 
 ### Authentication and Authorization
@@ -80,3 +82,4 @@ Preferred communication style: Simple, everyday language.
 - **Database Hosting**: Neon Database for serverless PostgreSQL hosting
 - **AI Services**: OpenAI API for natural language processing and mapping intelligence
 - **File Upload**: Local storage with multer for handling multipart form data
+- **XSLT Processing**: xmldom and xslt-processor for XML/XSLT parsing and transformation validation
