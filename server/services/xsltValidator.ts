@@ -394,74 +394,168 @@ export class XSLTValidatorService {
   }
 
   /**
-   * Validate consistency between target data, mapping file, and XSLT
+   * Validate consistency between target data, mapping file, and XSLT - comprehensive triad validation
    */
   private static validateConsistency(
     targetData: any,
     mappingData: any[],
     xsltMappings: any[]
-  ): { isConsistent: boolean; confidence: number; errors: string[]; warnings: string[] } {
+  ): { isConsistent: boolean; confidence: number; errors: string[]; warnings: string[]; details: any } {
     const errors: string[] = [];
     const warnings: string[] = [];
     let consistencyScore = 0;
     let totalChecks = 0;
+    const details: any = {
+      targetFields: new Set<string>(),
+      mappingTargetFields: [] as string[],
+      xsltTargetFields: [] as string[],
+      coverage: {} as any,
+      discrepancies: [] as any[]
+    };
 
-    // Get target fields from sample data
+    // Extract target fields from target data
     const targetFields = new Set<string>();
     if (Array.isArray(targetData) && targetData.length > 0) {
       Object.keys(targetData[0]).forEach(key => targetFields.add(key));
     } else if (typeof targetData === 'object' && targetData !== null) {
       Object.keys(targetData).forEach(key => targetFields.add(key));
     }
+    details.targetFields = targetFields;
 
-    // Check 1: Mapping file target fields should exist in target data
-    totalChecks++;
+    // Extract target fields from mapping file
     const mappedTargetFields = mappingData
       .filter(m => m.targetField && m.targetField.trim())
       .map(m => m.targetField.trim());
+    details.mappingTargetFields = mappedTargetFields;
     
-    const missingInTarget = mappedTargetFields.filter(field => !targetFields.has(field));
-    if (missingInTarget.length === 0) {
-      consistencyScore++;
-    } else {
-      errors.push(`Mapping file references target fields not found in target data: ${missingInTarget.join(', ')}`);
-    }
-
-    // Check 2: XSLT mappings should match mapping file
-    totalChecks++;
+    // Extract target fields from XSLT
     const xsltTargetFields = xsltMappings.map(m => m.targetField);
-    const mappingFileFields = mappingData.map(m => m.targetField).filter(f => f);
-    
-    const xsltMissingFromMapping = xsltTargetFields.filter(field => 
-      !mappingFileFields.some(mf => mf === field || mf.replace(/[^a-zA-Z0-9_-]/g, '_') === field)
+    details.xsltTargetFields = xsltTargetFields;
+
+    // COMPREHENSIVE CHECK 1: Target file vs Mapping file consistency
+    totalChecks++;
+    const missingInTarget = mappedTargetFields.filter(field => !targetFields.has(field));
+    const extraInMapping = mappedTargetFields.filter((field, index, arr) => 
+      arr.indexOf(field) !== index // Check for duplicates in mapping
     );
     
-    if (xsltMissingFromMapping.length === 0) {
+    if (missingInTarget.length === 0 && extraInMapping.length === 0) {
       consistencyScore++;
     } else {
-      warnings.push(`XSLT contains mappings not found in mapping file: ${xsltMissingFromMapping.join(', ')}`);
+      if (missingInTarget.length > 0) {
+        errors.push(`Mapping file references target fields not found in target data: ${missingInTarget.join(', ')}`);
+        details.discrepancies.push({
+          type: 'missing_in_target',
+          fields: missingInTarget
+        });
+      }
+      if (extraInMapping.length > 0) {
+        warnings.push(`Duplicate target fields in mapping file: ${extraInMapping.join(', ')}`);
+        details.discrepancies.push({
+          type: 'duplicate_in_mapping',
+          fields: extraInMapping
+        });
+      }
     }
 
-    // Check 3: Target data coverage
+    // COMPREHENSIVE CHECK 2: Mapping file vs XSLT consistency
     totalChecks++;
-    const coveredTargetFields = mappedTargetFields.filter(field => targetFields.has(field));
-    const coverageRatio = targetFields.size > 0 ? coveredTargetFields.length / targetFields.size : 0;
+    const mappingToXsltMismatches = [];
+    const xsltToMappingMismatches = [];
     
-    if (coverageRatio >= 0.8) {
+    // Check each mapping field has corresponding XSLT element
+    for (const mappingField of mappedTargetFields) {
+      const normalizedField = mappingField.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const hasXsltMapping = xsltTargetFields.some(xfield => 
+        xfield === mappingField || xfield === normalizedField
+      );
+      if (!hasXsltMapping) {
+        mappingToXsltMismatches.push(mappingField);
+      }
+    }
+    
+    // Check each XSLT field has corresponding mapping
+    for (const xsltField of xsltTargetFields) {
+      const hasMapping = mappedTargetFields.some(mfield => 
+        mfield === xsltField || mfield.replace(/[^a-zA-Z0-9_-]/g, '_') === xsltField
+      );
+      if (!hasMapping) {
+        xsltToMappingMismatches.push(xsltField);
+      }
+    }
+    
+    if (mappingToXsltMismatches.length === 0 && xsltToMappingMismatches.length === 0) {
       consistencyScore++;
-    } else if (coverageRatio >= 0.5) {
-      warnings.push(`Only ${Math.round(coverageRatio * 100)}% of target fields are covered by mappings`);
     } else {
-      warnings.push(`Low field coverage: only ${Math.round(coverageRatio * 100)}% of target fields are mapped`);
+      if (mappingToXsltMismatches.length > 0) {
+        warnings.push(`Mapping fields missing from XSLT: ${mappingToXsltMismatches.join(', ')}`);
+        details.discrepancies.push({
+          type: 'mapping_missing_in_xslt',
+          fields: mappingToXsltMismatches
+        });
+      }
+      if (xsltToMappingMismatches.length > 0) {
+        warnings.push(`XSLT fields missing from mapping: ${xsltToMappingMismatches.join(', ')}`);
+        details.discrepancies.push({
+          type: 'xslt_missing_in_mapping',
+          fields: xsltToMappingMismatches
+        });
+      }
     }
 
-    // Check 4: XSLT structure validation
+    // COMPREHENSIVE CHECK 3: Target vs XSLT direct comparison
     totalChecks++;
-    const hasValidXSLTStructure = xsltMappings.length > 0;
-    if (hasValidXSLTStructure) {
+    const xsltCoveredTargetFields = Array.from(targetFields).filter(targetField => 
+      xsltTargetFields.some(xfield => 
+        xfield === targetField || xfield === targetField.replace(/[^a-zA-Z0-9_-]/g, '_')
+      )
+    );
+    
+    const targetCoverage = targetFields.size > 0 ? xsltCoveredTargetFields.length / targetFields.size : 0;
+    details.coverage = {
+      totalTargetFields: targetFields.size,
+      coveredByXslt: xsltCoveredTargetFields.length,
+      coverageRatio: targetCoverage,
+      uncoveredFields: Array.from(targetFields).filter(field => !xsltCoveredTargetFields.includes(field))
+    };
+    
+    if (targetCoverage >= 0.9) {
+      consistencyScore++;
+    } else if (targetCoverage >= 0.7) {
+      warnings.push(`Good field coverage: ${Math.round(targetCoverage * 100)}% of target fields covered by XSLT`);
+    } else {
+      warnings.push(`Low field coverage: only ${Math.round(targetCoverage * 100)}% of target fields covered by XSLT`);
+      details.discrepancies.push({
+        type: 'low_coverage',
+        ratio: targetCoverage,
+        uncoveredFields: details.coverage.uncoveredFields
+      });
+    }
+
+    // COMPREHENSIVE CHECK 4: Field transformation consistency
+    totalChecks++;
+    const transformationConsistency = this.validateTransformationConsistency(mappingData, xsltMappings);
+    if (transformationConsistency.isConsistent) {
       consistencyScore++;
     } else {
-      errors.push('XSLT does not contain valid transformation mappings');
+      warnings.push(...transformationConsistency.warnings);
+      details.discrepancies.push({
+        type: 'transformation_inconsistency',
+        details: transformationConsistency.details
+      });
+    }
+
+    // COMPREHENSIVE CHECK 5: Data type validation
+    totalChecks++;
+    const typeValidation = this.validateDataTypes(targetData, mappingData);
+    if (typeValidation.isValid) {
+      consistencyScore++;
+    } else {
+      warnings.push(...typeValidation.warnings);
+      details.discrepancies.push({
+        type: 'type_mismatch',
+        details: typeValidation.mismatches
+      });
     }
 
     const confidence = totalChecks > 0 ? Math.round((consistencyScore / totalChecks) * 100) : 0;
@@ -471,7 +565,118 @@ export class XSLTValidatorService {
       isConsistent,
       confidence,
       errors,
-      warnings
+      warnings,
+      details
+    };
+  }
+
+  /**
+   * Validate transformation consistency between mapping file and XSLT
+   */
+  private static validateTransformationConsistency(mappingData: any[], xsltMappings: any[]): {
+    isConsistent: boolean;
+    warnings: string[];
+    details: any;
+  } {
+    const warnings: string[] = [];
+    const details = { mismatches: [] };
+    let consistentTransformations = 0;
+
+    for (const mapping of mappingData) {
+      if (!mapping.targetField) continue;
+      
+      const xsltMapping = xsltMappings.find(x => 
+        x.targetField === mapping.targetField || 
+        x.targetField === mapping.targetField.replace(/[^a-zA-Z0-9_-]/g, '_')
+      );
+      
+      if (xsltMapping) {
+        // Check if transformations match
+        const mappingTransform = mapping.transformation;
+        const xsltTransform = xsltMapping.transformation;
+        
+        if (mappingTransform && xsltTransform) {
+          if (JSON.stringify(mappingTransform) !== JSON.stringify(xsltTransform)) {
+            warnings.push(`Transformation mismatch for ${mapping.targetField}: mapping says ${JSON.stringify(mappingTransform)}, XSLT says ${JSON.stringify(xsltTransform)}`);
+            details.mismatches.push({
+              field: mapping.targetField,
+              mappingTransform,
+              xsltTransform
+            });
+          } else {
+            consistentTransformations++;
+          }
+        } else if (mappingTransform && !xsltTransform) {
+          warnings.push(`Mapping specifies transformation for ${mapping.targetField} but XSLT does not apply it`);
+          details.mismatches.push({
+            field: mapping.targetField,
+            issue: 'mapping_has_transform_xslt_does_not'
+          });
+        }
+      }
+    }
+
+    return {
+      isConsistent: warnings.length === 0,
+      warnings,
+      details
+    };
+  }
+
+  /**
+   * Validate data types between target data and mapping expectations
+   */
+  private static validateDataTypes(targetData: any, mappingData: any[]): {
+    isValid: boolean;
+    warnings: string[];
+    mismatches: any[];
+  } {
+    const warnings: string[] = [];
+    const mismatches = [];
+
+    if (!Array.isArray(targetData) || targetData.length === 0) {
+      return { isValid: true, warnings: ['Cannot validate data types - no sample target data'], mismatches: [] };
+    }
+
+    const sampleTarget = targetData[0];
+    
+    for (const mapping of mappingData) {
+      if (!mapping.targetField || !(mapping.targetField in sampleTarget)) continue;
+      
+      const targetValue = sampleTarget[mapping.targetField];
+      const targetType = typeof targetValue;
+      
+      // Check for type conversion mismatches
+      if (mapping.transformation && mapping.transformation.typeConversion) {
+        const expectedType = mapping.transformation.typeConversion;
+        
+        if (expectedType === 'string_to_integer' && targetType !== 'number') {
+          warnings.push(`Type mismatch for ${mapping.targetField}: expected number after conversion, found ${targetType}`);
+          mismatches.push({
+            field: mapping.targetField,
+            expectedType: 'number',
+            actualType: targetType,
+            transformation: expectedType
+          });
+        } else if (expectedType === 'string_to_date' && targetType !== 'string') {
+          // For date conversions, we expect string in ISO format
+          if (!targetValue || !targetValue.match(/^\d{4}-\d{2}-\d{2}/)) {
+            warnings.push(`Date format mismatch for ${mapping.targetField}: expected ISO date string, found ${targetType}`);
+            mismatches.push({
+              field: mapping.targetField,
+              expectedFormat: 'ISO date string',
+              actualValue: targetValue,
+              transformation: expectedType
+            });
+          }
+        }
+      }
+    }
+
+    return {
+      isValid: warnings.length === 0,
+      warnings,
+      mismatches
     };
   }
 
