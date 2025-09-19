@@ -102,20 +102,68 @@ export class FileProcessor {
       const parser = new XMLParser({ ignoreAttributes: false });
       const data = parser.parse(content);
 
-      // Extract the first level of data assuming a standard structure
-      const firstKey = Object.keys(data)[0];
+      // Extract records from XML structure
       let records: any[] = [];
 
-      if (Array.isArray(data[firstKey])) {
-        records = data[firstKey];
-      } else if (typeof data[firstKey] === 'object') {
-        records = [data[firstKey]];
+      // Find the actual data records by recursively searching the XML structure
+      const findRecords = (obj: any): any[] => {
+        if (Array.isArray(obj)) {
+          return obj.filter(item => typeof item === 'object' && item !== null);
+        }
+        
+        // Skip XML processing instructions
+        if (typeof obj === 'object' && obj !== null) {
+          for (const key of Object.keys(obj)) {
+            if (key.startsWith('?') || key.startsWith('@')) continue; // Skip XML declarations and attributes
+            
+            const value = obj[key];
+            if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+              return value;
+            } else if (typeof value === 'object' && value !== null) {
+              // Recursively search nested objects
+              const nestedRecords = findRecords(value);
+              if (nestedRecords.length > 0) {
+                return nestedRecords;
+              }
+            }
+          }
+        }
+        
+        return [];
+      };
+
+      records = findRecords(data);
+
+
+      // If no records found in nested structure, try flattening the entire structure
+      if (records.length === 0) {
+        const flattenRecord = (obj: any): Record<string, any> => {
+          const result: Record<string, any> = {};
+          for (const [key, value] of Object.entries(obj)) {
+            if (key.startsWith('@') || key.startsWith('?')) continue; // Skip XML attributes and declarations
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+              Object.assign(result, flattenRecord(value));
+            } else if (!Array.isArray(value)) {
+              result[key] = value;
+            }
+          }
+          return result;
+        };
+
+        const flattened = flattenRecord(data);
+        if (Object.keys(flattened).length > 0) {
+          records = [flattened];
+        }
       }
 
       const allFields = new Set<string>();
       records.forEach(record => {
         if (typeof record === 'object' && record !== null) {
-          Object.keys(record).forEach(key => allFields.add(key));
+          Object.keys(record).forEach(key => {
+            if (!key.startsWith('@')) { // Skip XML attributes like @_version
+              allFields.add(key);
+            }
+          });
         }
       });
 
