@@ -37,6 +37,7 @@ export function TransformationPreview({
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [filesGenerated, setFilesGenerated] = useState<any>(null);
 
   useEffect(() => {
     generateCode();
@@ -58,6 +59,9 @@ export function TransformationPreview({
 
       const result = await response.json();
       setIntegrationCode(result);
+      if (result.filesGenerated) {
+        setFilesGenerated(result.filesGenerated);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate code");
     } finally {
@@ -122,10 +126,13 @@ export function TransformationPreview({
         <CardContent className="py-16">
           <div className="text-center">
             <RefreshCw className="mx-auto h-12 w-12 text-primary animate-spin mb-4" />
-            <h3 className="text-lg font-medium mb-2">Generating Transformation Logic</h3>
-            <p className="text-muted-foreground">
-              Creating optimized data transformation code and API specifications...
-            </p>
+            <h3 className="text-lg font-medium mb-2">Generating Transformation Files</h3>
+            <div className="space-y-2 text-muted-foreground">
+              <p>📄 Creating field mapping documentation...</p>
+              <p>🔧 Generating XSLT transformation file...</p>
+              <p>📊 Building mapping CSV file...</p>
+              <p>⚙️ Preparing integration code...</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -207,17 +214,35 @@ export function TransformationPreview({
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Integration Output</CardTitle>
             <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  // In a real implementation, this would download the generated files
-                  console.log("Download integration files");
-                }}
-                data-testid="button-download-integration"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => window.open(`/api/projects/${projectId}/download/xslt`, '_blank')}
+                  data-testid="button-download-xslt"
+                  disabled={!filesGenerated}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  XSLT
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.open(`/api/projects/${projectId}/download/mapping-file`, '_blank')}
+                  data-testid="button-download-mapping"
+                  disabled={!filesGenerated}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Mapping CSV
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.open(`/api/projects/${projectId}/download/mapping-document`, '_blank')}
+                  data-testid="button-download-documentation"
+                  disabled={!filesGenerated}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Documentation
+                </Button>
+              </div>
               <Button 
                 onClick={testTransformation}
                 disabled={isTesting}
@@ -248,72 +273,105 @@ export function TransformationPreview({
             </TabsList>
             
             <TabsContent value="overview" className="mt-6">
+              {/* File Generation Status */}
+              {filesGenerated && (
+                <div className="mb-6 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <h4 className="font-medium text-green-800 dark:text-green-200">Files Generated Successfully</h4>
+                  </div>
+                  <p className="text-sm text-green-700 dark:text-green-300 mb-3">
+                    All transformation files have been created and are ready for download and validation.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span>XSLT Transformation File</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span>Field Mapping CSV</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span>Mapping Documentation</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* API Specification */}
+                {/* XSLT Transformation */}
                 <div className="bg-muted/30 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-3">
                     <FileCode className="h-5 w-5 text-primary" />
-                    <h4 className="font-medium">API Specification</h4>
+                    <h4 className="font-medium">XSLT Transformation</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">OpenAPI 3.0 specification generated</p>
+                  <p className="text-sm text-muted-foreground mb-3">XML transformation stylesheet</p>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Endpoints:</span>
-                      <span className="font-mono">3</span>
+                      <span>Status:</span>
+                      <span className={cn("font-mono", filesGenerated ? "text-green-600" : "text-amber-600")}>
+                        {filesGenerated ? "Generated" : "Pending"}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Models:</span>
-                      <span className="font-mono">2</span>
+                      <span>File:</span>
+                      <span className="font-mono">transformation.xsl</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Size:</span>
-                      <span className="font-mono">4.2 KB</span>
+                      <span>Type:</span>
+                      <span className="font-mono">XSLT 1.0</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Connector Code */}
+                {/* Field Mapping */}
                 <div className="bg-muted/30 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-3">
                     <Settings className="h-5 w-5 text-green-600" />
-                    <h4 className="font-medium">Connector Code</h4>
+                    <h4 className="font-medium">Field Mapping</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">Python transformation logic</p>
+                  <p className="text-sm text-muted-foreground mb-3">Structured mapping data</p>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Functions:</span>
-                      <span className="font-mono">5</span>
+                      <span>Status:</span>
+                      <span className={cn("font-mono", filesGenerated ? "text-green-600" : "text-amber-600")}>
+                        {filesGenerated ? "Generated" : "Pending"}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Tests:</span>
-                      <span className="font-mono">12</span>
+                      <span>File:</span>
+                      <span className="font-mono">field-mappings.csv</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Coverage:</span>
-                      <span className="font-mono">98%</span>
+                      <span>Format:</span>
+                      <span className="font-mono">CSV</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Job Configuration */}
+                {/* Documentation */}
                 <div className="bg-muted/30 rounded-lg p-4">
                   <div className="flex items-center space-x-2 mb-3">
                     <Clock className="h-5 w-5 text-amber-500" />
-                    <h4 className="font-medium">Job Configuration</h4>
+                    <h4 className="font-medium">Documentation</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">Scheduling and monitoring setup</p>
+                  <p className="text-sm text-muted-foreground mb-3">Human-readable mapping guide</p>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Schedule:</span>
-                      <span className="font-mono">Daily</span>
+                      <span>Status:</span>
+                      <span className={cn("font-mono", filesGenerated ? "text-green-600" : "text-amber-600")}>
+                        {filesGenerated ? "Generated" : "Pending"}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Retries:</span>
-                      <span className="font-mono">3</span>
+                      <span>File:</span>
+                      <span className="font-mono">mapping-documentation.txt</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Timeout:</span>
-                      <span className="font-mono">30m</span>
+                      <span>Format:</span>
+                      <span className="font-mono">Markdown</span>
                     </div>
                   </div>
                 </div>

@@ -47,11 +47,11 @@ export function XSLTValidationStep({
   const sourceFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "source");
   const targetFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "target");
 
-  // Validate XSLT mutation
-  const validateXSLTMutation = useMutation({
+  // Enhanced validation mutation (compares target, mapping, and XSLT files)
+  const validateGeneratedMutation = useMutation({
     mutationFn: async () => {
       setIsValidating(true);
-      const response = await apiRequest("POST", `/api/projects/${projectId}/validate-xslt`);
+      const response = await apiRequest("POST", `/api/projects/${projectId}/validate-generated`);
       return response.json();
     },
     onSuccess: (validationResult) => {
@@ -84,7 +84,7 @@ export function XSLTValidationStep({
   const hasValidationResults = !!xsltValidation;
   
   // Use the latest validation result from either the prop or the mutation result
-  const latestValidationResult = validateXSLTMutation.data || xsltValidation;
+  const latestValidationResult = validateGeneratedMutation.data || xsltValidation;
 
   return (
     <div className="space-y-6">
@@ -183,7 +183,7 @@ export function XSLTValidationStep({
                 </p>
               </div>
               <Button
-                onClick={() => validateXSLTMutation.mutate()}
+                onClick={() => validateGeneratedMutation.mutate()}
                 disabled={isValidating}
                 size="lg"
                 data-testid="button-validate-xslt"
@@ -286,7 +286,7 @@ export function XSLTValidationStep({
 
             {/* Actions */}
             <div className="flex justify-between pt-4">
-              <Button variant="outline" onClick={() => validateXSLTMutation.mutate()}>
+              <Button variant="outline" onClick={() => validateGeneratedMutation.mutate()}>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Re-validate
               </Button>
