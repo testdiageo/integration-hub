@@ -231,7 +231,7 @@ export default function IntegrationHub() {
                   >
                     <Save className="h-8 w-8 mb-2" />
                     <span className="font-semibold">Documentation</span>
-                    <span className="text-xs text-muted-foreground">PDF format</span>
+                    <span className="text-xs text-muted-foreground">Text format</span>
                   </Button>
                   <Button 
                     variant="outline" 

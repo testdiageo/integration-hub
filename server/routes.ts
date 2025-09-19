@@ -299,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const transformation = mapping.transformation 
           ? JSON.stringify(mapping.transformation).replace(/"/g, '""')
           : "";
-        return `"${mapping.sourceField}","${mapping.targetField || ""}","${mapping.mappingType}","${mapping.confidence || 0}%","${transformation}"`;
+        return `"${mapping.sourceField}","${mapping.targetField || ""}","${mapping.mappingType}",${mapping.confidence || 0},"${transformation}"`;
       }).join('\n');
 
       const csvContent = csvHeader + csvRows;
@@ -390,6 +390,27 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
       const sourceFile = files.find(f => f.systemType === "source");
       const targetFile = files.find(f => f.systemType === "target");
 
+      // Helper function to sanitize field names for XML
+      const sanitizeFieldName = (fieldName: string): string => {
+        return fieldName
+          .replace(/[^a-zA-Z0-9_-]/g, '_')
+          .replace(/^[^a-zA-Z_]/, '_')
+          .replace(/^$/, '_empty_');
+      };
+
+      // Helper function to escape XPath string literals
+      const escapeXPathString = (str: string): string => {
+        if (!str.includes("'")) {
+          return `'${str}'`;
+        } else if (!str.includes('"')) {
+          return `"${str}"`;
+        } else {
+          // Use concat() for strings containing both quote types
+          const parts = str.split("'").map(part => `'${part}'`);
+          return `concat(${parts.join(", \"'\", ")})`;
+        }
+      };
+
       // Generate XSLT transformation
       const xsltContent = `<?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -406,19 +427,20 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   <xsl:template match="record">
     <transformedRecord>
 ${mappings.filter(m => m.targetField).map(mapping => {
-  const sourceField = mapping.sourceField;
-  const targetField = mapping.targetField;
+  const sourceFieldSafe = sanitizeFieldName(mapping.sourceField);
+  const targetFieldSafe = sanitizeFieldName(mapping.targetField!);
+  const sourceFieldEscaped = escapeXPathString(mapping.sourceField);
   
   if (mapping.transformation) {
     const transform = mapping.transformation as any;
     if (transform.typeConversion === 'string_to_integer') {
-      return `      <${targetField}><xsl:value-of select="number(${sourceField})"/></${targetField}>`;
+      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="number(*[local-name()=${sourceFieldEscaped}])"/></xsl:element>`;
     } else if (transform.formatChange && transform.formatChange.includes('ISO')) {
-      return `      <${targetField}><xsl:value-of select="translate(${sourceField}, ' ', 'T')"/></${targetField}>`;
+      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="translate(*[local-name()=${sourceFieldEscaped}], ' ', 'T')"/></xsl:element>`;
     }
   }
   
-  return `      <${targetField}><xsl:value-of select="${sourceField}"/></${targetField}>`;
+  return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="*[local-name()=${sourceFieldEscaped}]"/></xsl:element>`;
 }).join('\n')}
 ${mappings.filter(m => !m.targetField && m.mappingType !== 'unmapped').map(mapping => 
   `      <!-- Unmapped field: ${mapping.sourceField} -->`
