@@ -14,10 +14,10 @@ import { apiRequest } from "@/lib/queryClient";
 
 const steps = [
   { number: 1, label: "Upload Files" },
-  { number: 2, label: "XSLT Validation" },
-  { number: 3, label: "Field Mapping" },
-  { number: 4, label: "Transformation" },
-  { number: 5, label: "Deploy" },
+  { number: 2, label: "Field Mapping" },
+  { number: 3, label: "Transformation" },
+  { number: 4, label: "Generate XSLT" },
+  { number: 5, label: "Validation" },
 ];
 
 export default function IntegrationHub() {
@@ -104,7 +104,7 @@ export default function IntegrationHub() {
       else if (xsltValidationCompleted) {
         setCurrentStep(3);
       }
-      // If both files are uploaded, go to step 2 for XSLT validation
+      // If both files are uploaded, go to step 2 for field mapping
       else if (sourceFile && targetFile) {
         setCurrentStep(2);
       }
@@ -123,7 +123,7 @@ export default function IntegrationHub() {
   const handleFileUploaded = async (file: UploadedFile) => {
     await refetchFiles();
     
-    // Auto-advance to XSLT validation step when both files are uploaded
+    // Auto-advance to field mapping step when both files are uploaded
     const updatedFiles = await refetchFiles();
     const sourceFile = (updatedFiles.data as UploadedFile[])?.find((f: UploadedFile) => f.systemType === "source");
     const targetFile = (updatedFiles.data as UploadedFile[])?.find((f: UploadedFile) => f.systemType === "target");
@@ -142,23 +142,23 @@ export default function IntegrationHub() {
   };
 
   const handleProceedToTransformation = () => {
+    setCurrentStep(3);
+  };
+
+  const handleProceedToXSLTGeneration = () => {
     setCurrentStep(4);
   };
 
-  const handleProceedToIntegration = () => {
+  const handleProceedToValidation = () => {
     setCurrentStep(5);
   };
 
   const handleBackToMapping = () => {
-    setCurrentStep(3);
-  };
-
-  const handleProceedToMapping = () => {
-    setCurrentStep(3);
-  };
-
-  const handleBackToXSLTValidation = () => {
     setCurrentStep(2);
+  };
+
+  const handleBackToTransformation = () => {
+    setCurrentStep(3);
   };
 
   // Get analysis data from mappings
@@ -255,14 +255,6 @@ export default function IntegrationHub() {
         )}
 
         {currentStep === 2 && (
-          <XSLTValidationStep
-            projectId={currentProject.id}
-            onProceedToMapping={handleProceedToMapping}
-            xsltValidation={currentProject.xsltValidation as any}
-          />
-        )}
-
-        {currentStep === 3 && (
           <FieldMappingComponent
             projectId={currentProject.id}
             mappings={mappings as FieldMapping[]}
@@ -272,65 +264,44 @@ export default function IntegrationHub() {
           />
         )}
 
-        {currentStep === 4 && (
+        {currentStep === 3 && (
           <TransformationPreview
             projectId={currentProject.id}
-            onProceedToIntegration={handleProceedToIntegration}
+            onProceedToIntegration={handleProceedToXSLTGeneration}
             onBackToMapping={handleBackToMapping}
           />
         )}
 
-        {currentStep === 5 && (
+        {currentStep === 4 && (
           <Card>
             <CardContent className="py-16">
               <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ArrowRightLeft className="h-8 w-8 text-blue-600" />
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ArrowRightLeft className="h-8 w-8 text-green-600" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4">Download Integration Assets</h3>
+                <h3 className="text-2xl font-bold mb-4">XSLT Generated Successfully</h3>
                 <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                  Your integration mapping is complete. Download the mapping documentation and files for your implementation.
+                  Your XSLT transformation file has been automatically generated based on your field mappings.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
-                  <Button 
-                    variant="outline" 
-                    className="flex flex-col items-center p-6 h-auto"
-                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/mapping-table`, '_blank')}
-                    data-testid="button-download-mapping-table"
-                  >
-                    <Save className="h-8 w-8 mb-2" />
-                    <span className="font-semibold">Mapping Table</span>
-                    <span className="text-xs text-muted-foreground">CSV format</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex flex-col items-center p-6 h-auto"
-                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/documentation`, '_blank')}
-                    data-testid="button-download-documentation"
-                  >
-                    <Save className="h-8 w-8 mb-2" />
-                    <span className="font-semibold">Documentation</span>
-                    <span className="text-xs text-muted-foreground">Text format</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex flex-col items-center p-6 h-auto"
-                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/xslt`, '_blank')}
-                    data-testid="button-download-xslt"
-                  >
-                    <Save className="h-8 w-8 mb-2" />
-                    <span className="font-semibold">XSLT File</span>
-                    <span className="text-xs text-muted-foreground">XSL format</span>
-                  </Button>
-                </div>
                 <div className="flex justify-center space-x-4">
-                  <Button variant="outline" onClick={() => setCurrentStep(3)}>
-                    Review Settings
+                  <Button variant="outline" onClick={handleBackToTransformation}>
+                    Back to Transformation
+                  </Button>
+                  <Button onClick={handleProceedToValidation} data-testid="button-proceed-validation">
+                    Proceed to Validation
                   </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {currentStep === 5 && (
+          <XSLTValidationStep
+            projectId={currentProject.id}
+            onProceedToMapping={() => setCurrentStep(2)}
+            xsltValidation={currentProject.xsltValidation as any}
+          />
         )}
       </main>
     </div>
