@@ -236,12 +236,12 @@ export default function IntegrationHub() {
                   <Button 
                     variant="outline" 
                     className="flex flex-col items-center p-6 h-auto"
-                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/excel`, '_blank')}
-                    data-testid="button-download-excel"
+                    onClick={() => window.open(`/api/projects/${currentProject.id}/download/xslt`, '_blank')}
+                    data-testid="button-download-xslt"
                   >
                     <Save className="h-8 w-8 mb-2" />
-                    <span className="font-semibold">Excel File</span>
-                    <span className="text-xs text-muted-foreground">XLSX format</span>
+                    <span className="font-semibold">XSLT File</span>
+                    <span className="text-xs text-muted-foreground">XSL format</span>
                   </Button>
                 </div>
                 <div className="flex justify-center space-x-4">

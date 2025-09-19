@@ -282,6 +282,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download mapping table as CSV
+  app.get("/api/projects/:id/download/mapping-table", async (req, res) => {
+    try {
+      const mappings = await storage.getMappingsByProject(req.params.id);
+      
+      if (mappings.length === 0) {
+        return res.status(400).json({ 
+          message: "No field mappings found. Generate mappings first." 
+        });
+      }
+
+      // Generate CSV content
+      const csvHeader = "Source Field,Target Field,Mapping Type,Confidence,Transformation\n";
+      const csvRows = mappings.map(mapping => {
+        const transformation = mapping.transformation 
+          ? JSON.stringify(mapping.transformation).replace(/"/g, '""')
+          : "";
+        return `"${mapping.sourceField}","${mapping.targetField || ""}","${mapping.mappingType}","${mapping.confidence || 0}%","${transformation}"`;
+      }).join('\n');
+
+      const csvContent = csvHeader + csvRows;
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="field-mappings.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Download mapping documentation as PDF
+  app.get("/api/projects/:id/download/documentation", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      const mappings = await storage.getMappingsByProject(req.params.id);
+      const files = await storage.getFilesByProject(req.params.id);
+      
+      if (mappings.length === 0) {
+        return res.status(400).json({ 
+          message: "No field mappings found. Generate mappings first." 
+        });
+      }
+
+      const sourceFile = files.find(f => f.systemType === "source");
+      const targetFile = files.find(f => f.systemType === "target");
+
+      // Generate simple text documentation (in a real implementation, this would be a PDF)
+      const documentation = `
+FIELD MAPPING DOCUMENTATION
+==========================
+
+Project: ${project?.name || 'Untitled Project'}
+Generated: ${new Date().toISOString()}
+
+SOURCE SYSTEM
+-------------
+File: ${sourceFile?.fileName || 'Unknown'}
+Format: ${sourceFile?.detectedSchema?.format || 'Unknown'}
+Fields: ${sourceFile?.detectedSchema?.fields?.length || 0}
+Records: ${sourceFile?.detectedSchema?.recordCount || 0}
+
+TARGET SYSTEM
+-------------
+File: ${targetFile?.fileName || 'Unknown'}
+Format: ${targetFile?.detectedSchema?.format || 'Unknown'}
+Fields: ${targetFile?.detectedSchema?.fields?.length || 0}
+Records: ${targetFile?.detectedSchema?.recordCount || 0}
+
+FIELD MAPPINGS
+--------------
+${mappings.map(mapping => `
+${mapping.sourceField} → ${mapping.targetField || '[UNMAPPED]'}
+  Type: ${mapping.mappingType}
+  Confidence: ${mapping.confidence || 0}%
+  ${mapping.transformation ? `Transformation: ${JSON.stringify(mapping.transformation)}` : 'No transformation required'}
+`).join('\n')}
+
+SUMMARY
+-------
+Total Mappings: ${mappings.length}
+Automatic Matches: ${mappings.filter(m => m.mappingType === 'auto').length}
+Suggested Matches: ${mappings.filter(m => m.mappingType === 'suggested').length}
+Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').length}
+`;
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', 'attachment; filename="mapping-documentation.txt"');
+      res.send(documentation);
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Download XSLT transformation file
+  app.get("/api/projects/:id/download/xslt", async (req, res) => {
+    try {
+      const mappings = await storage.getMappingsByProject(req.params.id);
+      const files = await storage.getFilesByProject(req.params.id);
+      
+      if (mappings.length === 0) {
+        return res.status(400).json({ 
+          message: "No field mappings found. Generate mappings first." 
+        });
+      }
+
+      const sourceFile = files.find(f => f.systemType === "source");
+      const targetFile = files.find(f => f.systemType === "target");
+
+      // Generate XSLT transformation
+      const xsltContent = `<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <xsl:output method="xml" indent="yes"/>
+  
+  <!-- Root template -->
+  <xsl:template match="/">
+    <root>
+      <xsl:apply-templates select="//record"/>
+    </root>
+  </xsl:template>
+  
+  <!-- Record transformation template -->
+  <xsl:template match="record">
+    <transformedRecord>
+${mappings.filter(m => m.targetField).map(mapping => {
+  const sourceField = mapping.sourceField;
+  const targetField = mapping.targetField;
+  
+  if (mapping.transformation) {
+    const transform = mapping.transformation as any;
+    if (transform.typeConversion === 'string_to_integer') {
+      return `      <${targetField}><xsl:value-of select="number(${sourceField})"/></${targetField}>`;
+    } else if (transform.formatChange && transform.formatChange.includes('ISO')) {
+      return `      <${targetField}><xsl:value-of select="translate(${sourceField}, ' ', 'T')"/></${targetField}>`;
+    }
+  }
+  
+  return `      <${targetField}><xsl:value-of select="${sourceField}"/></${targetField}>`;
+}).join('\n')}
+${mappings.filter(m => !m.targetField && m.mappingType !== 'unmapped').map(mapping => 
+  `      <!-- Unmapped field: ${mapping.sourceField} -->`
+).join('\n')}
+    </transformedRecord>
+  </xsl:template>
+  
+</xsl:stylesheet>`;
+
+      res.setHeader('Content-Type', 'application/xslt+xml');
+      res.setHeader('Content-Disposition', 'attachment; filename="field-transformation.xsl"');
+      res.send(xsltContent);
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
