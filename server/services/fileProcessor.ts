@@ -178,7 +178,7 @@ export class FileProcessor {
         // Check for date patterns
         if (/^\d{4}-\d{2}-\d{2}/.test(value)) return 'date';
         // Check for email
-        if /@/.test(value)) return 'email';
+        if (/@/.test(value)) return 'email';
         // Check for numbers in strings
         if (/^\d+$/.test(value)) return 'number';
         if (/^\d+\.\d+$/.test(value)) return 'number';
