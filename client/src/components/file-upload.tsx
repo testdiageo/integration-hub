@@ -10,11 +10,14 @@ import { type UploadedFile } from "@shared/schema";
 
 interface FileUploadProps {
   projectId: string;
-  systemType: "source" | "target";
+  systemType: "source" | "target" | "xslt_source" | "xslt_generated" | "xslt_file";
   onFileUploaded: (file: UploadedFile) => void;
   onFileDeleted: (fileId: string) => void;
   uploadedFile?: UploadedFile;
   disabled?: boolean;
+  title?: string;
+  description?: string;
+  acceptedFileTypes?: string;
 }
 
 export function FileUpload({
@@ -24,6 +27,9 @@ export function FileUpload({
   onFileDeleted,
   uploadedFile,
   disabled = false,
+  title,
+  description,
+  acceptedFileTypes,
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -73,17 +79,49 @@ export function FileUpload({
     [projectId, systemType, onFileUploaded, disabled]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
+  // Dynamic accept types based on acceptedFileTypes prop
+  const getAcceptTypes = () => {
+    if (acceptedFileTypes) {
+      const types: Record<string, string[]> = {};
+      const extensions = acceptedFileTypes.split(',').map(ext => ext.trim());
+      
+      for (const ext of extensions) {
+        if (ext === '.xml') {
+          types["application/xml"] = [".xml"];
+          types["text/xml"] = [".xml"];
+        } else if (ext === '.json') {
+          types["application/json"] = [".json"];
+        } else if (ext === '.xsl' || ext === '.xslt') {
+          types["application/xslt+xml"] = [".xsl", ".xslt"];
+          types["application/xml"] = [".xsl", ".xslt"];
+          types["text/xml"] = [".xsl", ".xslt"];
+        } else if (ext === '.csv') {
+          types["text/csv"] = [".csv"];
+        } else if (ext === '.xlsx') {
+          types["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"] = [".xlsx"];
+        } else if (ext === '.xls') {
+          types["application/vnd.ms-excel"] = [".xls"];
+        }
+      }
+      return types;
+    }
+
+    // Default accept types
+    return {
       "text/csv": [".csv"],
       "application/json": [".json"],
+      "application/xml": [".xml"],
       "text/xml": [".xml"],
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
       "application/vnd.ms-excel": [".xls"],
-    },
+    };
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
     multiple: false,
     disabled: disabled || isUploading,
+    accept: getAcceptTypes(),
   });
 
   const handleDelete = async () => {
@@ -111,6 +149,8 @@ export function FileUpload({
       case "json":
         return <Code className="text-blue-600" />;
       case "xml":
+      case "xsl":
+      case "xslt":
         return <FileText className="text-orange-600" />;
       case "xlsx":
       case "xls":
@@ -136,11 +176,11 @@ export function FileUpload({
   return (
     <Card className="p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-2 capitalize">
-          {systemType} System
+        <h3 className="text-lg font-semibold mb-2">
+          {title || `${systemType.charAt(0).toUpperCase() + systemType.slice(1)} System`}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Upload your {systemType} data template or schema
+          {description || `Upload your ${systemType} data template or schema`}
         </p>
       </div>
 

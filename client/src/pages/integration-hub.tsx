@@ -7,15 +7,17 @@ import { StepIndicator } from "@/components/step-indicator";
 import { FileUpload } from "@/components/file-upload";
 import { FieldMappingComponent } from "@/components/field-mapping";
 import { TransformationPreview } from "@/components/transformation-preview";
+import { XSLTValidationStep } from "@/components/xslt-validation";
 import { ArrowRightLeft, Bell, Settings, User, Save } from "lucide-react";
 import { type IntegrationProject, type UploadedFile, type FieldMapping } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
 const steps = [
   { number: 1, label: "Upload Files" },
-  { number: 2, label: "Field Mapping" },
-  { number: 3, label: "Transformation" },
-  { number: 4, label: "Deploy" },
+  { number: 2, label: "XSLT Validation" },
+  { number: 3, label: "Field Mapping" },
+  { number: 4, label: "Transformation" },
+  { number: 5, label: "Deploy" },
 ];
 
 export default function IntegrationHub() {
@@ -87,16 +89,22 @@ export default function IntegrationHub() {
     if (currentProject && files && mappings && !hasInitializedStep) {
       const sourceFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "source");
       const targetFile = (files as UploadedFile[]).find((f: UploadedFile) => f.systemType === "target");
+      const xsltValidationCompleted = currentProject.xsltValidation && 
+        (currentProject.xsltValidation as any)?.isValid;
       
-      // If project has integration code, go to step 4
+      // If project has integration code, go to step 5
       if (currentProject.integrationCode) {
-        setCurrentStep(4);
+        setCurrentStep(5);
       }
-      // If both files are uploaded and mappings exist, go to step 2
-      else if (sourceFile && targetFile && (mappings as FieldMapping[]).length > 0) {
-        setCurrentStep(2);
+      // If XSLT validation is completed and mappings exist, go to step 3
+      else if (xsltValidationCompleted && (mappings as FieldMapping[]).length > 0) {
+        setCurrentStep(3);
       }
-      // If both files are uploaded but no mappings, go to step 2 to allow mapping generation
+      // If XSLT validation is completed but no mappings, go to step 3 to allow mapping generation
+      else if (xsltValidationCompleted) {
+        setCurrentStep(3);
+      }
+      // If both files are uploaded, go to step 2 for XSLT validation
       else if (sourceFile && targetFile) {
         setCurrentStep(2);
       }
@@ -115,7 +123,7 @@ export default function IntegrationHub() {
   const handleFileUploaded = async (file: UploadedFile) => {
     await refetchFiles();
     
-    // Auto-advance to mapping step when both files are uploaded
+    // Auto-advance to XSLT validation step when both files are uploaded
     const updatedFiles = await refetchFiles();
     const sourceFile = (updatedFiles.data as UploadedFile[])?.find((f: UploadedFile) => f.systemType === "source");
     const targetFile = (updatedFiles.data as UploadedFile[])?.find((f: UploadedFile) => f.systemType === "target");
@@ -134,14 +142,22 @@ export default function IntegrationHub() {
   };
 
   const handleProceedToTransformation = () => {
-    setCurrentStep(3);
-  };
-
-  const handleProceedToIntegration = () => {
     setCurrentStep(4);
   };
 
+  const handleProceedToIntegration = () => {
+    setCurrentStep(5);
+  };
+
   const handleBackToMapping = () => {
+    setCurrentStep(3);
+  };
+
+  const handleProceedToMapping = () => {
+    setCurrentStep(3);
+  };
+
+  const handleBackToXSLTValidation = () => {
     setCurrentStep(2);
   };
 
@@ -239,6 +255,14 @@ export default function IntegrationHub() {
         )}
 
         {currentStep === 2 && (
+          <XSLTValidationStep
+            projectId={currentProject.id}
+            onProceedToMapping={handleProceedToMapping}
+            xsltValidation={currentProject.xsltValidation as any}
+          />
+        )}
+
+        {currentStep === 3 && (
           <FieldMappingComponent
             projectId={currentProject.id}
             mappings={mappings as FieldMapping[]}
@@ -248,7 +272,7 @@ export default function IntegrationHub() {
           />
         )}
 
-        {currentStep === 3 && (
+        {currentStep === 4 && (
           <TransformationPreview
             projectId={currentProject.id}
             onProceedToIntegration={handleProceedToIntegration}
@@ -256,7 +280,7 @@ export default function IntegrationHub() {
           />
         )}
 
-        {currentStep === 4 && (
+        {currentStep === 5 && (
           <Card>
             <CardContent className="py-16">
               <div className="text-center">

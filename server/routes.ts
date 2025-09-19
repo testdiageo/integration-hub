@@ -6,12 +6,14 @@ import fs from "fs";
 import { storage } from "./storage";
 import { FileProcessor } from "./services/fileProcessor";
 import { AIMappingService } from "./services/aiMapping";
+import { XSLTValidatorService } from "./services/xsltValidator";
 import { 
   insertIntegrationProjectSchema,
   fileUploadSchema,
   generateMappingSchema,
   updateMappingSchema,
-  insertFieldMappingSchema
+  insertFieldMappingSchema,
+  xsltValidationSchema
 } from "@shared/schema";
 
 // Configure multer for file uploads
@@ -19,6 +21,7 @@ const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -68,14 +71,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         systemType: req.body.systemType
       });
 
-      // Process the uploaded file
-      const detectedSchema = await FileProcessor.processFile(req.file.path, req.file.originalname);
-      
-      // Calculate schema confidence based on data quality
-      const schemaConfidence = Math.min(100, Math.max(60, 
-        80 + (detectedSchema.fields.length > 5 ? 10 : 0) + 
-        (detectedSchema.recordCount && detectedSchema.recordCount > 100 ? 10 : 0)
-      ));
+      let detectedSchema = null;
+      let schemaConfidence = null;
+
+      // Only process schema for data files, not XSLT files
+      if (!systemType.includes('xslt') || systemType === 'xslt_source' || systemType === 'xslt_generated') {
+        // Process the uploaded file
+        detectedSchema = await FileProcessor.processFile(req.file.path, req.file.originalname);
+        
+        // Calculate schema confidence based on data quality
+        schemaConfidence = Math.min(100, Math.max(60, 
+          80 + (detectedSchema.fields.length > 5 ? 10 : 0) + 
+          (detectedSchema.recordCount && detectedSchema.recordCount > 100 ? 10 : 0)
+        ));
+      }
+
+      // For XSLT validation files, preserve them for validation
+      if (systemType.startsWith('xslt_')) {
+        const xsltDir = path.join('uploads', 'xslt', req.params.id);
+        if (!fs.existsSync(xsltDir)) {
+          fs.mkdirSync(xsltDir, { recursive: true });
+        }
+        
+        let persistentPath: string | undefined;
+        if (systemType === 'xslt_file') {
+          persistentPath = path.join(xsltDir, 'transformation.xsl');
+        } else if (systemType === 'xslt_source') {
+          persistentPath = path.join(xsltDir, 'source.xml');
+        } else if (systemType === 'xslt_generated') {
+          persistentPath = path.join(xsltDir, 'expected.json');
+        }
+        
+        if (persistentPath) {
+          fs.copyFileSync(req.file.path, persistentPath);
+        }
+      }
 
       // Save file record
       const uploadedFile = await storage.createFile({
@@ -339,16 +369,16 @@ Generated: ${new Date().toISOString()}
 SOURCE SYSTEM
 -------------
 File: ${sourceFile?.fileName || 'Unknown'}
-Format: ${sourceFile?.detectedSchema?.format || 'Unknown'}
-Fields: ${sourceFile?.detectedSchema?.fields?.length || 0}
-Records: ${sourceFile?.detectedSchema?.recordCount || 0}
+Format: ${(sourceFile?.detectedSchema as any)?.format || 'Unknown'}
+Fields: ${(sourceFile?.detectedSchema as any)?.fields?.length || 0}
+Records: ${(sourceFile?.detectedSchema as any)?.recordCount || 0}
 
 TARGET SYSTEM
 -------------
 File: ${targetFile?.fileName || 'Unknown'}
-Format: ${targetFile?.detectedSchema?.format || 'Unknown'}
-Fields: ${targetFile?.detectedSchema?.fields?.length || 0}
-Records: ${targetFile?.detectedSchema?.recordCount || 0}
+Format: ${(targetFile?.detectedSchema as any)?.format || 'Unknown'}
+Fields: ${(targetFile?.detectedSchema as any)?.fields?.length || 0}
+Records: ${(targetFile?.detectedSchema as any)?.recordCount || 0}
 
 FIELD MAPPINGS
 --------------
@@ -374,6 +404,77 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
       res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
+
+  // Validate XSLT transformation
+  app.post("/api/projects/:id/validate-xslt", async (req, res) => {
+    try {
+      const { projectId } = xsltValidationSchema.parse({ projectId: req.params.id });
+      
+      // Get all XSLT validation files
+      const files = await storage.getFilesByProject(projectId);
+      const xsltSourceFile = files.find(f => f.systemType === "xslt_source");
+      const xsltGeneratedFile = files.find(f => f.systemType === "xslt_generated");
+      const xsltFile = files.find(f => f.systemType === "xslt_file");
+
+      if (!xsltSourceFile || !xsltGeneratedFile || !xsltFile) {
+        return res.status(400).json({ 
+          message: "All three files are required: source XML, generated JSON, and XSLT file" 
+        });
+      }
+
+      // Create temp files for validation since files are not persisted in uploads
+      const tempDir = path.join('uploads', 'temp', projectId);
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      // Use the actual uploaded files for validation
+      const sourceXmlPath = path.join('uploads', 'xslt', projectId, 'source.xml');
+      const generatedJsonPath = path.join('uploads', 'xslt', projectId, 'expected.json');
+      const xsltFilePath = path.join('uploads', 'xslt', projectId, 'transformation.xsl');
+
+      // Check if all required files exist
+      if (!fs.existsSync(sourceXmlPath)) {
+        return res.status(400).json({ 
+          message: "Source XML file not found. Please upload the source XML file again." 
+        });
+      }
+      
+      if (!fs.existsSync(generatedJsonPath)) {
+        return res.status(400).json({ 
+          message: "Generated JSON file not found. Please upload the generated JSON file again." 
+        });
+      }
+      
+      if (!fs.existsSync(xsltFilePath)) {
+        return res.status(400).json({ 
+          message: "XSLT file not found. Please upload the XSLT file again." 
+        });
+      }
+
+      // Perform XSLT validation
+      const validationResult = await XSLTValidatorService.validateXSLT(
+        sourceXmlPath,
+        generatedJsonPath,
+        xsltFilePath
+      );
+
+      // Update project with validation results
+      await storage.updateProject(projectId, {
+        status: validationResult.isValid ? "mapping" : "xslt_validation",
+        xsltValidation: validationResult,
+      });
+
+      // Files are preserved for potential re-validation
+      // Clean up is handled by project deletion or periodic cleanup
+
+      res.json(validationResult);
+
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
 
   // Download XSLT transformation file
   app.get("/api/projects/:id/download/xslt", async (req, res) => {
