@@ -37,7 +37,7 @@ export class AIMappingService {
       const prompt = this.buildMappingPrompt(sourceSchema, targetSchema);
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -76,10 +76,23 @@ export class AIMappingService {
             content: prompt
           }
         ],
-        response_format: { type: "json_object" },
+
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      // Clean up response content and extract JSON  
+      let content = response.choices[0].message.content || '{}';
+      
+      // Remove markdown code fencing
+      content = content.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '');
+      content = content.replace(/```\s*/g, '');
+      
+      // Try to extract JSON from the response (handle cases where AI adds descriptive text)
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        content = jsonMatch[0];
+      }
+      
+      const result = JSON.parse(content);
       return this.processMappingResult(result);
 
     } catch (error) {
@@ -163,7 +176,7 @@ Respond with JSON in this format:
 }`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-5",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -174,10 +187,50 @@ Respond with JSON in this format:
             content: prompt
           }
         ],
-        response_format: { type: "json_object" },
+
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      // Clean up response content and extract JSON
+      let content = response.choices[0].message.content || '{}';
+      
+      // Remove markdown code fencing
+      content = content.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '');
+      content = content.replace(/```\s*/g, '');
+      
+      // Remove control characters that can break JSON parsing
+      content = content.replace(/[\x00-\x1F\x7F]/g, '');
+      
+      // Try to extract JSON from the response (handle cases where AI adds descriptive text)
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        content = jsonMatch[0];
+      }
+      
+      // Try to parse JSON with fallback error handling
+      let result;
+      try {
+        result = JSON.parse(content);
+      } catch (parseError) {
+        // If JSON parsing fails, try to fix common issues and retry
+        try {
+          // Attempt to fix unescaped quotes within string values
+          const fixedContent = content.replace(/("(?:[^"\\]|\\.)*")\s*:\s*"([^"]*(?:\\.[^"]*)*)"/g, (match, key, value) => {
+            // Escape unescaped quotes within the value
+            const escapedValue = value.replace(/(?<!\\)"/g, '\\"');
+            return `${key}: "${escapedValue}"`;
+          });
+          result = JSON.parse(fixedContent);
+        } catch (secondParseError) {
+          // If all else fails, return a default structure
+          console.error('Failed to parse AI response JSON:', parseError instanceof Error ? parseError.message : 'Unknown error');
+          result = {
+            pythonCode: "# Code generation failed - invalid JSON response",
+            apiSpec: {},
+            testCases: []
+          };
+        }
+      }
+      
       return {
         pythonCode: result.pythonCode || "# Generated transformation code would appear here",
         apiSpec: result.apiSpec || {},
