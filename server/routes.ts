@@ -810,5 +810,104 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
     }
   });
 
+  // Streamlined API endpoint for direct XSLT generation
+  app.post("/api/v1/transform", upload.fields([
+    { name: 'source', maxCount: 1 },
+    { name: 'target', maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      if (!files?.source?.[0] || !files?.target?.[0]) {
+        return res.status(400).json({
+          error: "Both source and target files are required",
+          usage: "POST /api/v1/transform with multipart form data containing 'source' and 'target' files"
+        });
+      }
+
+      const sourceFile = files.source[0];
+      const targetFile = files.target[0];
+
+      console.log(`[API Transform] Processing files: ${sourceFile.originalname} -> ${targetFile.originalname}`);
+
+      // Process source file to detect schema
+      const sourceSchema = await FileProcessor.processFile(sourceFile.path, sourceFile.originalname || 'source');
+      
+      // Process target file to detect schema
+      const targetSchema = await FileProcessor.processFile(targetFile.path, targetFile.originalname || 'target');
+
+      console.log(`[API Transform] Source schema: ${sourceSchema.fields.length} fields, Target schema: ${targetSchema.fields.length} fields`);
+
+      // Generate AI-powered field mappings
+      const mappingAnalysis = await AIMappingService.generateFieldMappings(sourceSchema, targetSchema);
+      
+      console.log(`[API Transform] Generated ${mappingAnalysis.mappings.length} mappings with ${mappingAnalysis.overallConfidence}% confidence`);
+
+      // Generate XSLT content
+      const xsltContent = generateXSLTContent(mappingAnalysis.mappings);
+
+      // Generate mapping CSV content for reference
+      const csvHeader = 'Source Field,Target Field,Mapping Type,Confidence,Transformation\n';
+      const csvRows = mappingAnalysis.mappings.map(mapping => {
+        const transformationDesc = mapping.transformation ? 
+          `"${mapping.transformation.typeConversion || 'None'} | ${mapping.transformation.formatChange || 'None'}"` : 
+          '""';
+        return `"${mapping.sourceField}","${mapping.targetField || ''}","${mapping.mappingType}","${mapping.confidence}%",${transformationDesc}`;
+      }).join('\n');
+      const csvContent = csvHeader + csvRows;
+
+      // Clean up temporary files
+      fs.unlink(sourceFile.path, (err) => {
+        if (err) console.warn(`Failed to cleanup source file: ${err.message}`);
+      });
+      fs.unlink(targetFile.path, (err) => {
+        if (err) console.warn(`Failed to cleanup target file: ${err.message}`);
+      });
+
+      // Return comprehensive response
+      res.json({
+        success: true,
+        xslt: xsltContent,
+        mappings: mappingAnalysis.mappings,
+        analysis: {
+          overallConfidence: mappingAnalysis.overallConfidence,
+          autoMatches: mappingAnalysis.autoMatches,
+          suggestedMatches: mappingAnalysis.suggestedMatches,
+          manualReviewNeeded: mappingAnalysis.manualReviewNeeded,
+          sourceFields: sourceSchema.fields.length,
+          targetFields: targetSchema.fields.length,
+          mappedFields: mappingAnalysis.mappings.filter(m => m.targetField).length
+        },
+        schemas: {
+          source: {
+            format: sourceSchema.format,
+            fields: sourceSchema.fields,
+            recordCount: sourceSchema.recordCount
+          },
+          target: {
+            format: targetSchema.format,
+            fields: targetSchema.fields,
+            recordCount: targetSchema.recordCount
+          }
+        },
+        csv: csvContent,
+        metadata: {
+          processedAt: new Date().toISOString(),
+          sourceFile: sourceFile.originalname,
+          targetFile: targetFile.originalname,
+          version: "1.0"
+        }
+      });
+
+    } catch (error) {
+      console.error(`[API Transform] Error:`, error);
+      res.status(500).json({ 
+        error: "Failed to process transformation",
+        message: error instanceof Error ? error.message : 'Unknown error',
+        usage: "POST /api/v1/transform with multipart form data containing 'source' and 'target' files"
+      });
+    }
+  });
+
   return createServer(app);
 }
