@@ -194,14 +194,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ));
       }
 
-      // For XSLT validation files, preserve them for validation
+      // Preserve files for validation - source, target, and XSLT files
+      let persistentPath: string | undefined;
+      
       if (systemType.startsWith('xslt_')) {
+        // Create a directory to store XSLT validation files for this project
         const xsltDir = path.join('uploads', 'xslt', req.params.id);
         if (!fs.existsSync(xsltDir)) {
           fs.mkdirSync(xsltDir, { recursive: true });
         }
-        
-        let persistentPath: string | undefined;
+
         if (systemType === 'xslt_file') {
           persistentPath = path.join(xsltDir, 'transformation.xsl');
         } else if (systemType === 'xslt_source') {
@@ -209,10 +211,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (systemType === 'xslt_generated') {
           persistentPath = path.join(xsltDir, 'expected.json');
         }
-        
-        if (persistentPath) {
-          fs.copyFileSync(req.file.path, persistentPath);
+      } else if (systemType === 'source' || systemType === 'target') {
+        // Create a directory to store source/target files for validation
+        const dataDir = path.join('uploads', 'data', req.params.id);
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
         }
+        // Use original filename but ensure it's safe
+        const safeFileName = req.file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+        persistentPath = path.join(dataDir, safeFileName);
+      }
+      
+      if (persistentPath) {
+        fs.copyFileSync(req.file.path, persistentPath);
       }
 
       // Save file record
@@ -643,14 +654,18 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
         });
       }
 
+      // Construct the correct path to the stored target file
+      const safeTargetFileName = targetFile.fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const targetFilePath = path.join('uploads', 'data', req.params.id, safeTargetFileName);
+
       console.log(`[VALIDATION] Calling validateGeneratedFiles with:`, {
-        targetPath: path.join('uploads', targetFile.fileName),
+        targetPath: targetFilePath,
         mappingPath,
         xsltPath
       });
 
       const result = await XSLTValidatorService.validateGeneratedFiles(
-        path.join('uploads', targetFile.fileName),
+        targetFilePath,
         mappingPath,
         xsltPath
       );

@@ -1,0 +1,12 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","auto","90%","{""typeConversion"":null,""formatChange"":null}"
+"KSCHL","CODLIST","auto","90%","{""typeConversion"":null,""formatChange"":null}"
+"MATNR","CODART","suggested","85%","{""typeConversion"":""number_to_string"",""formatChange"":""Adding leading zeroes to match target format.""}"
+"DATAB","DTEFROMDETAIL","auto","90%","{""typeConversion"":null,""formatChange"":null}"
+"DATBI","DTETODETAIL","auto","90%","{""typeConversion"":null,""formatChange"":null}"
+"KMEIN","UMPRZ","suggested","80%","{""typeConversion"":null,""formatChange"":null}"
+"KBETR","PRZVAL","suggested","75%","{""typeConversion"":""number_to_string"",""formatChange"":""Require format change to present number with decimal point.""}"
+"KBETR","PRZVALPVP","suggested","75%","{""typeConversion"":""number_to_string"",""formatChange"":""Require format change to present number with decimal point.""}"
+"VTWEG","DISTR_CHAN","suggested","85%","{""typeConversion"":null,""formatChange"":null}"
+"VAKEY","CODNODELIST","suggested","60%","{""typeConversion"":null,""formatChange"":null}"
+"STFKZ","","unmapped","0%","{""typeConversion"":null,""formatChange"":null}"
