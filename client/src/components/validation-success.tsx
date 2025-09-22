@@ -8,7 +8,8 @@ import {
   FileSpreadsheet, 
   FileText,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Workflow
 } from "lucide-react";
 
 interface ValidationSuccessProps {
@@ -37,6 +38,10 @@ export function ValidationSuccessStep({
       case 'xslt':
         endpoint = `/api/projects/${projectId}/download/xslt`;
         filename = 'transformation.xsl';
+        break;
+      case 'dataweave':
+        endpoint = `/api/projects/${projectId}/download/dataweave`;
+        filename = 'transformation.dwl';
         break;
       case 'mapping':
         endpoint = `/api/projects/${projectId}/download/mapping-file`;
@@ -68,7 +73,7 @@ export function ValidationSuccessStep({
             🎉 Validation Successful!
           </CardTitle>
           <p className="text-green-700 dark:text-green-300 text-lg">
-            Your XSLT transformation is ready for production deployment
+            Your transformations are ready for production deployment
           </p>
         </CardHeader>
         <CardContent className="text-center space-y-4">
@@ -85,7 +90,7 @@ export function ValidationSuccessStep({
           {/* Success Details */}
           <div className="bg-green-100 dark:bg-green-900/20 rounded-lg p-4 text-green-800 dark:text-green-200">
             <p className="font-medium">✅ All validations passed successfully</p>
-            <p className="text-sm mt-1">Target file, mapping CSV, and XSLT are perfectly synchronized</p>
+            <p className="text-sm mt-1">All transformation files are perfectly synchronized and validated</p>
           </div>
         </CardContent>
       </Card>
@@ -102,7 +107,7 @@ export function ValidationSuccessStep({
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* XSLT File */}
             <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
               <CardContent className="p-6 text-center space-y-4">
@@ -125,6 +130,32 @@ export function ValidationSuccessStep({
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Download XSLT
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* DataWeave File */}
+            <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+              <CardContent className="p-6 text-center space-y-4">
+                <div className="flex justify-center">
+                  <Workflow className="h-12 w-12 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-amber-800 dark:text-amber-200">DataWeave (Mule)</h3>
+                  <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">
+                    MuleSoft transformation script
+                  </p>
+                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-1">
+                    transformation.dwl
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => handleDownload('dataweave')}
+                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  data-testid="button-download-success-dataweave"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download DataWeave
                 </Button>
               </CardContent>
             </Card>

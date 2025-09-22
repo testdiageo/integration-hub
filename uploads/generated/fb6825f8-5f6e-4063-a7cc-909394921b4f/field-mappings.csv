@@ -1,0 +1,9 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","suggested","85%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KSCHL","CODLIST","auto","90%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"MATNR","CODART","suggested","70%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"DATAB","DTEFROMDETAIL","auto","90%","{""typeConversion"":""number_to_date"",""formatChange"":""YYYYMMDD to YYYY-MM-DD""}"
+"DATBI","DTETODETAIL","auto","90%","{""typeConversion"":""number_to_date"",""formatChange"":""YYYYMMDD to YYYY-MM-DD""}"
+"KMEIN","UMPRZ","suggested","80%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KBETR","PRZVALPVP","suggested","80%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"VTWEG","DISTR_CHAN","suggested","85%","{""typeConversion"":""none"",""formatChange"":""none""}"

@@ -22,6 +22,86 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
+// Helper function to generate DataWeave content
+function generateDataWeaveContent(mappings: any[]): string {
+  const sanitizeFieldName = (fieldName: string): string => {
+    // DataWeave supports quoted field names, but prefer valid identifiers when possible
+    if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)) {
+      return fieldName;
+    }
+    return `"${fieldName.replace(/"/g, '\\"')}"`;
+  };
+
+  const generateTransformation = (sourceField: string, mapping: any): string => {
+    const quotedSource = `r."${sourceField}"`;
+    
+    if (!mapping.transformation) {
+      return quotedSource;
+    }
+
+    const transform = mapping.transformation as any;
+    let expression = quotedSource;
+
+    // Comprehensive type conversion handling
+    if (transform.typeConversion) {
+      switch (transform.typeConversion) {
+        case 'string_to_integer':
+        case 'string_to_number':
+          expression = `${quotedSource} as Number`;
+          break;
+        case 'number_to_string':
+        case 'number_to_string_with_two_decimal':
+          expression = `${quotedSource} as String`;
+          break;
+        case 'number_to_date':
+          // Convert number date format (YYYYMMDD) to ISO date string (YYYY-MM-DD)
+          expression = `(${quotedSource} as String) replace /(.{4})(.{2})(.{2})/ with "$1-$2-$3"`;
+          break;
+      }
+    }
+
+    // Comprehensive format change handling
+    if (transform.formatChange) {
+      const formatStr = transform.formatChange.toLowerCase();
+      
+      if (formatStr.includes('leading zeros') || formatStr.includes('prepend_zeros') || formatStr.includes('add leading zeros') || formatStr.includes('zero_padding') || formatStr.includes('zero padding') || formatStr.includes('padding zeros') || formatStr.includes('pad left') || formatStr.includes('left pad') || formatStr.includes('zeros to the left') || formatStr.includes('prepend_zeroes') || formatStr.includes('zeroes')) {
+        // Extract target length if specified, default to 10
+        const match = formatStr.match(/(?:length is |length )(\d+)/) || formatStr.match(/(\d+)/);
+        const length = match ? match[1] : '10';
+        const baseExpr = transform.typeConversion === 'number_to_string' ? `${quotedSource} as String` : `${quotedSource} as String`;
+        const zeros = '0'.repeat(parseInt(length));
+        expression = `(${baseExpr} as Number) as String { format: "${zeros}" }`;
+      } else if (formatStr.includes('two decimal') || formatStr.includes('decimal places') || formatStr.includes('decimal_formatting') || formatStr.includes('decimal formatting') || formatStr.includes('changing decimal') || formatStr.includes('format_number_as_decimal') || transform.typeConversion === 'number_to_string_with_two_decimal') {
+        // Format with exactly 2 decimal places
+        const baseExpr = transform.typeConversion?.includes('string') ? `${quotedSource} as Number` : `${quotedSource} as Number`;
+        expression = `${baseExpr} as String { format: "#.00" }`;
+      } else if (formatStr.includes('iso') || formatStr.includes('yyyy-mm-dd') || formatStr.includes('yyyymmdd_to_yyyy-mm-dd') || formatStr.includes('yyyymmdd to yyyy-mm-dd')) {
+        // Handle date formatting that wasn't caught in type conversion
+        if (!transform.typeConversion?.includes('date')) {
+          expression = `(${quotedSource} as String) replace /(.{4})(.{2})(.{2})/ with "$1-$2-$3"`;
+        }
+      }
+    }
+
+    return expression;
+  };
+
+  return `%dw 2.0
+output application/json
+---
+{
+  root: payload..record map (r) -> {
+    transformedRecord: {
+${mappings.filter(m => m.targetField).map(mapping => {
+  const targetFieldSafe = sanitizeFieldName(mapping.targetField!);
+  const transformation = generateTransformation(mapping.sourceField, mapping);
+  return `      ${targetFieldSafe}: ${transformation}`;
+}).join(',\n')}
+    }
+  }
+}`;
+}
+
 // Helper function to generate XSLT content
 function generateXSLTContent(mappings: any[]): string {
   const sanitizeFieldName = (fieldName: string): string => {
@@ -63,10 +143,36 @@ ${mappings.filter(m => m.targetField).map(mapping => {
   
   if (mapping.transformation) {
     const transform = mapping.transformation as any;
-    if (transform.typeConversion === 'string_to_integer') {
-      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="number(*[local-name()=${sourceFieldEscaped}])"/></xsl:element>`;
-    } else if (transform.formatChange && transform.formatChange.includes('ISO')) {
-      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="translate(*[local-name()=${sourceFieldEscaped}], ' ', 'T')"/></xsl:element>`;
+    const sourceExpr = `*[local-name()=${sourceFieldEscaped}]`;
+    
+    // Handle type conversions and format changes
+    if (transform.typeConversion === 'string_to_integer' || transform.typeConversion === 'string_to_number') {
+      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="number(${sourceExpr})"/></xsl:element>`;
+    } else if (transform.typeConversion === 'number_to_date' || (transform.formatChange && (transform.formatChange.toLowerCase().includes('yyyy-mm-dd') || transform.formatChange.toLowerCase().includes('yyyymmdd_to_yyyy-mm-dd')))) {
+      // Convert YYYYMMDD to YYYY-MM-DD  
+      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="concat(substring(${sourceExpr}, 1, 4), '-', substring(${sourceExpr}, 5, 2), '-', substring(${sourceExpr}, 7, 2))"/></xsl:element>`;
+    } else if (transform.formatChange) {
+      const formatStr = transform.formatChange.toLowerCase();
+      
+      if (formatStr.includes('leading zeros') || formatStr.includes('prepend_zeros') || formatStr.includes('add leading zeros') || formatStr.includes('zero_padding') || formatStr.includes('zero padding') || formatStr.includes('padding zeros') || formatStr.includes('pad left') || formatStr.includes('left pad') || formatStr.includes('zeros to the left')) {
+        // Zero-padding transformation - extract length, default to 10
+        const match = formatStr.match(/(?:length is |length )(\d+)/) || formatStr.match(/(\d+)/);
+        const length = match ? match[1] : '10';
+        return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="format-number(${sourceExpr}, '${'0'.repeat(parseInt(length))}')"/></xsl:element>`;
+      } else if (formatStr.includes('two decimal') || formatStr.includes('decimal places') || formatStr.includes('decimal_formatting') || formatStr.includes('decimal formatting') || formatStr.includes('changing decimal') || formatStr.includes('format_number_as_decimal') || transform.typeConversion === 'number_to_string_with_two_decimal') {
+        // Two decimal places formatting
+        return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="format-number(${sourceExpr}, '#.00')"/></xsl:element>`;
+      } else if (formatStr.includes('iso')) {
+        return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="translate(${sourceExpr}, ' ', 'T')"/></xsl:element>`;
+      }
+    }
+    
+    // Handle simple type conversions without format changes
+    if (transform.typeConversion === 'number_to_string' || transform.typeConversion === 'number_to_string_with_two_decimal') {
+      if (transform.typeConversion === 'number_to_string_with_two_decimal') {
+        return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="format-number(${sourceExpr}, '#.00')"/></xsl:element>`;
+      }
+      return `      <xsl:element name="${targetFieldSafe}"><xsl:value-of select="string(${sourceExpr})"/></xsl:element>`;
     }
   }
   
@@ -397,6 +503,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       fs.writeFileSync(path.join(xsltDir, 'transformation.xsl'), xsltContent);
 
+      // Generate and save DataWeave file
+      const dataWeaveContent = generateDataWeaveContent(mappings);
+      fs.writeFileSync(path.join(xsltDir, 'transformation.dwl'), dataWeaveContent);
+
       // Generate and save mapping file (CSV format)
       const mappingCSV = generateMappingCSV(mappings);
       fs.writeFileSync(path.join(xsltDir, 'field-mappings.csv'), mappingCSV);
@@ -415,6 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...integrationCode,
         filesGenerated: {
           xslt: 'transformation.xsl',
+          dataweave: 'transformation.dwl',
           mappingFile: 'field-mappings.csv',
           mappingDocument: 'mapping-documentation.txt'
         }
@@ -735,6 +846,25 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
     }
   });
 
+  // Download generated DataWeave file
+  app.get("/api/projects/:id/download/dataweave", async (req, res) => {
+    try {
+      const dataWeavePath = path.join('uploads', 'generated', req.params.id, 'transformation.dwl');
+      
+      if (!fs.existsSync(dataWeavePath)) {
+        return res.status(404).json({ 
+          message: "DataWeave file not found. Generate transformation files first." 
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', 'attachment; filename="transformation.dwl"');
+      res.sendFile(path.resolve(dataWeavePath));
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
   // Download generated mapping file (CSV)
   app.get("/api/projects/:id/download/mapping-file", async (req, res) => {
     try {
@@ -810,25 +940,34 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
     }
   });
 
-  // Streamlined API endpoint for direct XSLT generation
+  // Streamlined API endpoint for direct transformation generation (XSLT and DataWeave)
   app.post("/api/v1/transform", upload.fields([
     { name: 'source', maxCount: 1 },
     { name: 'target', maxCount: 1 }
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const format = req.query.format as string || 'xslt'; // Default to XSLT
+      
+      // Validate format parameter
+      if (format !== 'xslt' && format !== 'dataweave') {
+        return res.status(400).json({
+          error: "Invalid format parameter. Supported formats: 'xslt', 'dataweave'",
+          usage: "POST /api/v1/transform?format=xslt|dataweave with multipart form data containing 'source' and 'target' files"
+        });
+      }
       
       if (!files?.source?.[0] || !files?.target?.[0]) {
         return res.status(400).json({
           error: "Both source and target files are required",
-          usage: "POST /api/v1/transform with multipart form data containing 'source' and 'target' files"
+          usage: "POST /api/v1/transform?format=xslt|dataweave with multipart form data containing 'source' and 'target' files"
         });
       }
 
       const sourceFile = files.source[0];
       const targetFile = files.target[0];
 
-      console.log(`[API Transform] Processing files: ${sourceFile.originalname} -> ${targetFile.originalname}`);
+      console.log(`[API Transform] Processing files: ${sourceFile.originalname} -> ${targetFile.originalname} (format: ${format})`);
 
       // Process source file to detect schema
       const sourceSchema = await FileProcessor.processFile(sourceFile.path, sourceFile.originalname || 'source');
@@ -843,8 +982,10 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
       
       console.log(`[API Transform] Generated ${mappingAnalysis.mappings.length} mappings with ${mappingAnalysis.overallConfidence}% confidence`);
 
-      // Generate XSLT content
-      const xsltContent = generateXSLTContent(mappingAnalysis.mappings);
+      // Generate transformation content based on format
+      const transformationContent = format === 'dataweave' ? 
+        generateDataWeaveContent(mappingAnalysis.mappings) : 
+        generateXSLTContent(mappingAnalysis.mappings);
 
       // Generate mapping CSV content for reference
       const csvHeader = 'Source Field,Target Field,Mapping Type,Confidence,Transformation\n';
@@ -864,10 +1005,9 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
         if (err) console.warn(`Failed to cleanup target file: ${err.message}`);
       });
 
-      // Return comprehensive response
-      res.json({
+      // Return comprehensive response with format-specific content
+      const response: any = {
         success: true,
-        xslt: xsltContent,
         mappings: mappingAnalysis.mappings,
         analysis: {
           overallConfidence: mappingAnalysis.overallConfidence,
@@ -895,16 +1035,26 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
           processedAt: new Date().toISOString(),
           sourceFile: sourceFile.originalname,
           targetFile: targetFile.originalname,
+          format: format,
           version: "1.0"
         }
-      });
+      };
+
+      // Add format-specific transformation content
+      if (format === 'dataweave') {
+        response.dataweave = transformationContent;
+      } else {
+        response.xslt = transformationContent;
+      }
+
+      res.json(response);
 
     } catch (error) {
       console.error(`[API Transform] Error:`, error);
       res.status(500).json({ 
         error: "Failed to process transformation",
         message: error instanceof Error ? error.message : 'Unknown error',
-        usage: "POST /api/v1/transform with multipart form data containing 'source' and 'target' files"
+        usage: "POST /api/v1/transform?format=xslt|dataweave with multipart form data containing 'source' and 'target' files"
       });
     }
   });
