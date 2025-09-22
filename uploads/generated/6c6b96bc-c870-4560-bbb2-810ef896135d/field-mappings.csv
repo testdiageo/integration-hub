@@ -1,0 +1,10 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","auto","90%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KSCHL","CODLIST","auto","90%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"MATNR","CODART","suggested","85%","{""typeConversion"":""number_to_string"",""formatChange"":""prepend_zeros""}"
+"DATAB","DTEFROMDETAIL","suggested","75%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"DATBI","DTETODETAIL","suggested","75%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KMEIN","UMPRZ","suggested","75%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KBETR","PRZVALPVP","suggested","75%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"VTWEG","DISTR_CHAN","suggested","75%","{""typeConversion"":""number_to_string"",""formatChange"":""none""}"
+"TABNAM","","unmapped","0%","{""typeConversion"":""none"",""formatChange"":""none""}"

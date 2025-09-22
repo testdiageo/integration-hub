@@ -1,0 +1,110 @@
+# Field Mapping Documentation
+
+## Project Overview
+Generated on: 2025-09-22T10:38:25.245Z
+
+## Source System
+File: ListPrice - AS-IS.xml
+Type: xml
+Records: ~1
+
+## Target System  
+File: ListPrice - TO-BE.json
+Type: json
+Records: ~1
+
+## Field Mappings
+
+
+### 1. VKORG → CODDIV
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {
+  "typeConversion": "none",
+  "formatChange": "none"
+}
+
+
+### 2. KSCHL → CODLIST
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {
+  "typeConversion": "none",
+  "formatChange": "none"
+}
+
+
+### 3. MATNR → CODART
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {
+  "typeConversion": "number_to_string",
+  "formatChange": "prepend_zeros"
+}
+
+
+### 4. DATAB → DTEFROMDETAIL
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": "none",
+  "formatChange": "none"
+}
+
+
+### 5. DATBI → DTETODETAIL
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": "none",
+  "formatChange": "none"
+}
+
+
+### 6. KMEIN → UMPRZ
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": "none",
+  "formatChange": "none"
+}
+
+
+### 7. KBETR → PRZVALPVP
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": "none",
+  "formatChange": "none"
+}
+
+
+### 8. VTWEG → DISTR_CHAN
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": "number_to_string",
+  "formatChange": "none"
+}
+
+
+### 9. TABNAM → Unmapped
+- **Mapping Type**: unmapped
+- **Confidence**: 0%
+- **Transformation**: {
+  "typeConversion": "none",
+  "formatChange": "none"
+}
+
+
+## Summary
+- Total mappings: 9
+- Auto-mapped: 2
+- Suggested: 6
+- Manual: 0
+- Unmapped: 1
+
+## Usage Instructions
+1. Apply the generated XSLT transformation to your source XML data
+2. Validate the output against your target schema
+3. Adjust mappings as needed for your specific use case
