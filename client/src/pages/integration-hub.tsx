@@ -8,6 +8,7 @@ import { FileUpload } from "@/components/file-upload";
 import { FieldMappingComponent } from "@/components/field-mapping";
 import { TransformationPreview } from "@/components/transformation-preview";
 import { XSLTValidationStep } from "@/components/xslt-validation";
+import { ValidationSuccessStep } from "@/components/validation-success";
 import { ArrowRightLeft, Bell, Settings, User, Save } from "lucide-react";
 import { type IntegrationProject, type UploadedFile, type FieldMapping } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,6 +19,7 @@ const steps = [
   { number: 3, label: "Transformation" },
   { number: 4, label: "Generate XSLT" },
   { number: 5, label: "Validation" },
+  { number: 6, label: "Success & Download" },
 ];
 
 export default function IntegrationHub() {
@@ -299,8 +301,16 @@ export default function IntegrationHub() {
         {currentStep === 5 && (
           <XSLTValidationStep
             projectId={currentProject.id}
-            onProceedToMapping={() => setCurrentStep(2)}
+            onProceedToSuccess={() => setCurrentStep(6)}
             xsltValidation={currentProject.xsltValidation as any}
+          />
+        )}
+
+        {currentStep === 6 && (
+          <ValidationSuccessStep
+            projectId={currentProject.id}
+            validationResult={currentProject.xsltValidation as any}
+            onBackToValidation={() => setCurrentStep(5)}
           />
         )}
       </main>

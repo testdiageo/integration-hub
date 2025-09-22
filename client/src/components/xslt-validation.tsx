@@ -19,7 +19,7 @@ import { type UploadedFile } from "@shared/schema";
 
 interface XSLTValidationProps {
   projectId: string;
-  onProceedToMapping: () => void;
+  onProceedToSuccess: () => void;
   xsltValidation?: {
     isValid: boolean;
     errors: string[];
@@ -31,7 +31,7 @@ interface XSLTValidationProps {
 
 export function XSLTValidationStep({
   projectId,
-  onProceedToMapping,
+  onProceedToSuccess,
   xsltValidation
 }: XSLTValidationProps) {
   const [isValidating, setIsValidating] = useState(false);
@@ -60,9 +60,9 @@ export function XSLTValidationStep({
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
       
       if (validationResult.isValid) {
-        // Auto-proceed to mapping step if validation is successful
+        // Auto-proceed to success page if validation is successful
         setTimeout(() => {
-          onProceedToMapping();
+          onProceedToSuccess();
         }, 2000);
       }
     },
@@ -292,8 +292,8 @@ export function XSLTValidationStep({
               </Button>
               
               {latestValidationResult.isValid && (
-                <Button onClick={onProceedToMapping} data-testid="button-proceed-mapping">
-                  Proceed to Field Mapping
+                <Button onClick={onProceedToSuccess} data-testid="button-proceed-success">
+                  Proceed to Downloads
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               )}

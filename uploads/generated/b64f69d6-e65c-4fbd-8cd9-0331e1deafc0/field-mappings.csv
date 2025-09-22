@@ -1,0 +1,2 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"item","target","suggested","50%","{""typeConversion"":""number_to_string"",""formatChange"":""None""}"
