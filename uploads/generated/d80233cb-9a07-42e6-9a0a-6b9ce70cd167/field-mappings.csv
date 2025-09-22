@@ -1,0 +1,11 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","auto","90%","{}"
+"KSCHL","CODLIST","auto","90%","{}"
+"MATNR","CODART","suggested","80%","{""typeConversion"":""number_to_string"",""formatChange"":""Zero padding is required for 15 characters""}"
+"DATAB","DTEFROMDETAIL","suggested","85%","{}"
+"DATBI","DTETODETAIL","suggested","85%","{}"
+"KMEIN","UMPRZ","suggested","85%","{}"
+"KBETR","PRZVALPVP","suggested","75%","{""typeConversion"":""number_to_string""}"
+"VTWEG","DISTR_CHAN","suggested","85%","{}"
+"VKORG","DIVISION","suggested","50%","{""typeConversion"":""number"",""formatChange"":""Extract last two characters and convert to number""}"
+"TABNAM","","unmapped","0%","{}"

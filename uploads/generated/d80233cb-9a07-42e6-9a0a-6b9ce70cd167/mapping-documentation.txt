@@ -1,0 +1,97 @@
+# Field Mapping Documentation
+
+## Project Overview
+Generated on: 2025-09-19T17:15:58.254Z
+
+## Source System
+File: ListPrice - AS-IS.xml
+Type: xml
+Records: ~1
+
+## Target System  
+File: ListPrice - TO-BE.json
+Type: json
+Records: ~1
+
+## Field Mappings
+
+
+### 1. VKORG → CODDIV
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {}
+
+
+### 2. KSCHL → CODLIST
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {}
+
+
+### 3. MATNR → CODART
+- **Mapping Type**: suggested
+- **Confidence**: 80%
+- **Transformation**: {
+  "typeConversion": "number_to_string",
+  "formatChange": "Zero padding is required for 15 characters"
+}
+
+
+### 4. DATAB → DTEFROMDETAIL
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {}
+
+
+### 5. DATBI → DTETODETAIL
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {}
+
+
+### 6. KMEIN → UMPRZ
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {}
+
+
+### 7. KBETR → PRZVALPVP
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": "number_to_string"
+}
+
+
+### 8. VTWEG → DISTR_CHAN
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {}
+
+
+### 9. VKORG → DIVISION
+- **Mapping Type**: suggested
+- **Confidence**: 50%
+- **Transformation**: {
+  "typeConversion": "number",
+  "formatChange": "Extract last two characters and convert to number"
+}
+
+
+### 10. TABNAM → Unmapped
+- **Mapping Type**: unmapped
+- **Confidence**: 0%
+- **Transformation**: {}
+
+
+## Summary
+- Total mappings: 10
+- Auto-mapped: 2
+- Suggested: 7
+- Manual: 0
+- Unmapped: 1
+
+## Usage Instructions
+1. Apply the generated XSLT transformation to your source XML data
+2. Validate the output against your target schema
+3. Adjust mappings as needed for your specific use case
