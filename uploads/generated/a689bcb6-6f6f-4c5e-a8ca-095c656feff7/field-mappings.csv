@@ -1,0 +1,3 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"id","id","auto","100%","{""typeConversion"":null,""formatChange"":null}"
+"name","full_name","suggested","75%","{""typeConversion"":null,""formatChange"":""Potential name truncation or appendage may be necessary, based on business rules.""}"

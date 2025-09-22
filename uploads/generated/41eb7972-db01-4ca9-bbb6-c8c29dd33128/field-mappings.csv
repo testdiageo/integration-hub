@@ -1,0 +1,3 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"id","uid","suggested","85%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"name","full_name","suggested","75%","{""typeConversion"":""none"",""formatChange"":""none""}"
