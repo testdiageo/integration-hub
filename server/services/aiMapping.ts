@@ -89,6 +89,10 @@ export class AIMappingService {
       // Remove control characters that can break JSON parsing
       content = content.replace(/[\x00-\x1F\x7F]/g, '');
       
+      // Remove JSON comments (/* ... */ and // ...)
+      content = content.replace(/\/\*[\s\S]*?\*\//g, '');
+      content = content.replace(/\/\/.*$/gm, '');
+      
       // Try to extract JSON from the response (handle cases where AI adds descriptive text)
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
