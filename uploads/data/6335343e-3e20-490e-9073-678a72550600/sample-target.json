@@ -1,0 +1,9 @@
+{
+  "orders": [
+    {
+      "id": 100,
+      "client": "Acme Corp",
+      "total": 250.5
+    }
+  ]
+}

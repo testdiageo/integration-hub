@@ -1,0 +1,14 @@
+{
+  "records": [
+    {
+      "CODDIV": "DIV1",
+      "CODLIST": "LST1",
+      "CODART": "ART-001",
+      "DTEFROMDETAIL": "2025-01-01",
+      "DTETODETAIL": "2025-12-31",
+      "UMPRZ": "EA",
+      "PRZVALPVP": 99.99,
+      "DISTR_CHAN": "01"
+    }
+  ]
+}

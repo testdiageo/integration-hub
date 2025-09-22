@@ -1,0 +1,4 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"id","orders.id","suggested","75%","{""typeConversion"":""none"",""formatChange"":""source field 'id' needs to be placed inside 'orders' object""}"
+"customer","orders.client","suggested","60%","{""typeConversion"":""none"",""formatChange"":""source field 'customer' needs to be placed inside 'orders' object as 'client'""}"
+"amount","orders.total","suggested","75%","{""typeConversion"":""none"",""formatChange"":""source field 'amount' needs to be placed inside 'orders' object as 'total'""}"

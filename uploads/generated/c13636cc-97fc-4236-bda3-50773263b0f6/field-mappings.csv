@@ -1,0 +1,9 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","","unmapped","20%","{""typeConversion"":null,""formatChange"":null}"
+"KSCHL","CODDIV","suggested","75%","{""typeConversion"":null,""formatChange"":null}"
+"MATNR","CODART","auto","90%","{""typeConversion"":null,""formatChange"":null}"
+"DATAB","DTEFROMDETAIL","suggested","85%","{""typeConversion"":null,""formatChange"":null}"
+"DATBI","DTETODETAIL","auto","95%","{""typeConversion"":null,""formatChange"":null}"
+"KMEIN","UMPRZ","suggested","80%","{""typeConversion"":null,""formatChange"":null}"
+"KBETR","PRZVALPVP","suggested","87%","{""typeConversion"":null,""formatChange"":null}"
+"VTWEG","DISTR_CHAN","suggested","60%","{""typeConversion"":""number_to_string"",""formatChange"":""Number should be converted to string with zero padding""}"

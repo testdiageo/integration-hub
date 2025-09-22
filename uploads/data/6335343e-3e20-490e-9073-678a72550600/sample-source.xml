@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<orders>
+  <order><id>1</id><customer>Acme</customer><amount>100.0</amount></order>
+</orders>

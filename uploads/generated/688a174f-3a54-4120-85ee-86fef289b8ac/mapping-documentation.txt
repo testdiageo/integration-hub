@@ -1,0 +1,101 @@
+# Field Mapping Documentation
+
+## Project Overview
+Generated on: 2025-09-22T09:02:17.863Z
+
+## Source System
+File: test-source.xml
+Type: xml
+Records: ~1
+
+## Target System  
+File: test-target.json
+Type: json
+Records: ~1
+
+## Field Mappings
+
+
+### 1. VKORG → CODDIV
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": "None",
+  "formatChange": "None"
+}
+
+
+### 2. KSCHL → CODLIST
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {
+  "typeConversion": "None",
+  "formatChange": "None"
+}
+
+
+### 3. MATNR → CODART
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {
+  "typeConversion": "number_to_string",
+  "formatChange": "Add leading zeros"
+}
+
+
+### 4. DATAB → DTEFROMDETAIL
+- **Mapping Type**: suggested
+- **Confidence**: 89%
+- **Transformation**: {
+  "typeConversion": "number_to_date",
+  "formatChange": "YYYYMMDD to YYYY-MM-DD"
+}
+
+
+### 5. DATBI → DTETODETAIL
+- **Mapping Type**: suggested
+- **Confidence**: 89%
+- **Transformation**: {
+  "typeConversion": "number_to_date",
+  "formatChange": "YYYYMMDD to YYYY-MM-DD"
+}
+
+
+### 6. KMEIN → UMPRZ
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {
+  "typeConversion": "None",
+  "formatChange": "None"
+}
+
+
+### 7. KBETR → PRZVALPVP
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {
+  "typeConversion": "number_to_string",
+  "formatChange": "No format change"
+}
+
+
+### 8. VTWEG → DISTR_CHAN
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {
+  "typeConversion": "None",
+  "formatChange": "None"
+}
+
+
+## Summary
+- Total mappings: 8
+- Auto-mapped: 3
+- Suggested: 5
+- Manual: 0
+- Unmapped: 0
+
+## Usage Instructions
+1. Apply the generated XSLT transformation to your source XML data
+2. Validate the output against your target schema
+3. Adjust mappings as needed for your specific use case

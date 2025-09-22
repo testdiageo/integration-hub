@@ -1,0 +1,101 @@
+# Field Mapping Documentation
+
+## Project Overview
+Generated on: 2025-09-22T09:07:27.459Z
+
+## Source System
+File: source.xml
+Type: xml
+Records: ~1
+
+## Target System  
+File: target.json
+Type: json
+Records: ~1
+
+## Field Mappings
+
+
+### 1. VKORG → Unmapped
+- **Mapping Type**: unmapped
+- **Confidence**: 20%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 2. KSCHL → CODDIV
+- **Mapping Type**: suggested
+- **Confidence**: 75%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 3. MATNR → CODART
+- **Mapping Type**: auto
+- **Confidence**: 90%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 4. DATAB → DTEFROMDETAIL
+- **Mapping Type**: suggested
+- **Confidence**: 85%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 5. DATBI → DTETODETAIL
+- **Mapping Type**: auto
+- **Confidence**: 95%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 6. KMEIN → UMPRZ
+- **Mapping Type**: suggested
+- **Confidence**: 80%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 7. KBETR → PRZVALPVP
+- **Mapping Type**: suggested
+- **Confidence**: 87%
+- **Transformation**: {
+  "typeConversion": null,
+  "formatChange": null
+}
+
+
+### 8. VTWEG → DISTR_CHAN
+- **Mapping Type**: suggested
+- **Confidence**: 60%
+- **Transformation**: {
+  "typeConversion": "number_to_string",
+  "formatChange": "Number should be converted to string with zero padding"
+}
+
+
+## Summary
+- Total mappings: 8
+- Auto-mapped: 2
+- Suggested: 5
+- Manual: 0
+- Unmapped: 1
+
+## Usage Instructions
+1. Apply the generated XSLT transformation to your source XML data
+2. Validate the output against your target schema
+3. Adjust mappings as needed for your specific use case
