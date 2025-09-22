@@ -644,13 +644,13 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
       }
 
       console.log(`[VALIDATION] Calling validateGeneratedFiles with:`, {
-        targetPath: targetFile.filePath,
+        targetPath: path.join('uploads', targetFile.fileName),
         mappingPath,
         xsltPath
       });
 
       const result = await XSLTValidatorService.validateGeneratedFiles(
-        targetFile.filePath,
+        path.join('uploads', targetFile.fileName),
         mappingPath,
         xsltPath
       );
@@ -662,8 +662,12 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
         confidence: result.confidenceScore
       });
 
-      // Save validation results
-      const validationData = {
+      // Update project status to validated
+      await storage.updateProject(req.params.id, {
+        status: result.isValid ? "validated" : "validation_failed"
+      });
+
+      res.json({
         projectId: req.params.id,
         isValid: result.isValid,
         errors: result.errors,
@@ -671,16 +675,7 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
         confidenceScore: result.confidenceScore,
         matchesExpected: result.matchesExpected,
         transformedData: result.transformedData
-      };
-
-      const validation = await storage.saveXSLTValidation(validationData);
-
-      // Update project status to validated
-      await storage.updateProject(req.params.id, {
-        status: result.isValid ? "validated" : "validation_failed"
       });
-
-      res.json(validation);
     } catch (error) {
       res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
     }

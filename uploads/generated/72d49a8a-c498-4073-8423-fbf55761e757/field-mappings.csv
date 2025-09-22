@@ -1,0 +1,11 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","auto","90%","{""typeConversion"":""no_conversion_required"",""formatChange"":""none""}"
+"KSCHL","CODLIST","suggested","85%","{""typeConversion"":""no_conversion_required"",""formatChange"":""none""}"
+"MATNR","CODART","suggested","75%","{""typeConversion"":""number_to_string"",""formatChange"":""Zero padding needed""}"
+"DATAB","DTEFROMDETAIL","auto","90%","{""typeConversion"":""no_conversion_required"",""formatChange"":""none""}"
+"DATBI","DTETODETAIL","auto","90%","{""typeConversion"":""no_conversion_required"",""formatChange"":""none""}"
+"KMEIN","UMPRZ","suggested","85%","{""typeConversion"":""no_conversion_required"",""formatChange"":""none""}"
+"KBETR","PRZVALPVP","suggested","80%","{""typeConversion"":""number_to_string"",""formatChange"":""Decimals needed""}"
+"VTWEG","DISTR_CHAN","suggested","85%","{""typeConversion"":""no_conversion_required"",""formatChange"":""none""}"
+"KOTABNR","DIVISION","suggested","75%","{""typeConversion"":""number_to_string"",""formatChange"":""Zero padding required""}"
+"MESCOD","","unmapped","35%","{}"
