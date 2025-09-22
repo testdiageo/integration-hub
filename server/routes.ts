@@ -654,10 +654,30 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
         });
       }
 
-      // Construct the correct path to the stored target file
+      // Find the target file - check multiple locations for backwards compatibility
       const safeTargetFileName = targetFile.fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const targetFilePath = path.join('uploads', 'data', req.params.id, safeTargetFileName);
+      let targetFilePath: string;
+      
+      // Check new location first (uploads/data/projectId/)
+      const newLocation = path.join('uploads', 'data', req.params.id, safeTargetFileName);
+      // Check old location (uploads/ direct)
+      const oldLocation = path.join('uploads', targetFile.fileName);
+      // Check uploads root with safe filename
+      const safeLocation = path.join('uploads', safeTargetFileName);
+      
+      if (fs.existsSync(newLocation)) {
+        targetFilePath = newLocation;
+      } else if (fs.existsSync(oldLocation)) {
+        targetFilePath = oldLocation;
+      } else if (fs.existsSync(safeLocation)) {
+        targetFilePath = safeLocation;
+      } else {
+        return res.status(400).json({ 
+          message: `Target file not found. Please re-upload your target file: ${targetFile.fileName}` 
+        });
+      }
 
+      console.log(`[VALIDATION] Found target file at: ${targetFilePath}`);
       console.log(`[VALIDATION] Calling validateGeneratedFiles with:`, {
         targetPath: targetFilePath,
         mappingPath,
