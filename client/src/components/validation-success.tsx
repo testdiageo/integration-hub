@@ -13,7 +13,7 @@ import {
 
 interface ValidationSuccessProps {
   projectId: string;
-  validationResult: {
+  validationResult?: {
     isValid: boolean;
     errors: string[];
     warnings: string[];
@@ -75,7 +75,7 @@ export function ValidationSuccessStep({
           {/* Confidence Score */}
           <div className="flex items-center justify-center space-x-4">
             <Badge variant="default" className="bg-green-600 text-white">
-              Confidence: {validationResult.confidence}%
+              Confidence: {validationResult?.confidence || 0}%
             </Badge>
             <Badge variant="outline" className="border-green-600 text-green-600">
               Production Ready
