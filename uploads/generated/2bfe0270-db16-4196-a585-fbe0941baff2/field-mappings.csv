@@ -1,0 +1,9 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","suggested","85%","{""typeConversion"":""no_conversion_needed"",""formatChange"":""none""}"
+"KSCHL","CODLIST","auto","90%","{""typeConversion"":""no_conversion_needed"",""formatChange"":""none""}"
+"MATNR","CODART","suggested","75%","{""typeConversion"":""number_to_string_padded_with_zeros"",""formatChange"":""Adding leading zeroes to match target format""}"
+"DATAB","DTEFROMDETAIL","suggested","75%","{""typeConversion"":""number_to_date"",""formatChange"":""YYYYMMDD to YYYY-MM-DD""}"
+"DATBI","DTETODETAIL","suggested","75%","{""typeConversion"":""number_to_date"",""formatChange"":""YYYYMMDD to YYYY-MM-DD""}"
+"KMEIN","UMPRZ","auto","90%","{""typeConversion"":""no_conversion_needed"",""formatChange"":""none""}"
+"KBETR","PRZVALPVP","suggested","75%","{""typeConversion"":""number_to_string"",""formatChange"":""Specific decimal representation needed""}"
+"VTWEG","DISTR_CHAN","suggested","85%","{""typeConversion"":""no_conversion_needed"",""formatChange"":""none""}"

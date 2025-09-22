@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<records>
+  <record>
+    <VKORG>1</VKORG>
+    <KSCHL>PR00</KSCHL>
+    <MATNR>123456</MATNR>
+    <DATAB>20240101</DATAB>
+    <DATBI>20241231</DATBI>
+    <KMEIN>PC</KMEIN>
+    <KBETR>100.5</KBETR>
+    <VTWEG>10</VTWEG>
+  </record>
+</records>

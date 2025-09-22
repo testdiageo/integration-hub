@@ -1,0 +1,12 @@
+[
+  {
+    "CODDIV": "01",
+    "CODLIST": "PR00", 
+    "CODART": "0000123456",
+    "DTEFROMDETAIL": "2024-01-01",
+    "DTETODETAIL": "2024-12-31",
+    "UMPRZ": "PC",
+    "PRZVALPVP": "100.50",
+    "DISTR_CHAN": "10"
+  }
+]
