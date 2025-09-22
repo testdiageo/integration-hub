@@ -1,0 +1,9 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","auto","90%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KSCHL","CODLIST","auto","90%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"MATNR","CODART","suggested","76%","{""typeConversion"":""number_to_string"",""formatChange"":""Add leading zeros to the string to match the length of CODART.""}"
+"DATAB","DTEFROMDETAIL","suggested","79%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"DATBI","DTETODETAIL","suggested","80%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KMEIN","UMPRZ","suggested","76%","{""typeConversion"":""none"",""formatChange"":""none""}"
+"KBETR","PRZVALPVP","suggested","76%","{""typeConversion"":""number_to_string"",""formatChange"":""Decimal formatting conversion to match PRZVALPVP format.""}"
+"VTWEG","DISTR_CHAN","suggested","77%","{""typeConversion"":""none"",""formatChange"":""none""}"

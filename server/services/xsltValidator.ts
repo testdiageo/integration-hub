@@ -579,7 +579,7 @@ export class XSLTValidatorService {
     details: any;
   } {
     const warnings: string[] = [];
-    const details = { mismatches: [] };
+    const details = { mismatches: [] as any[] };
     let consistentTransformations = 0;
 
     for (const mapping of mappingData) {
