@@ -107,3 +107,87 @@ Preferred communication style: Simple, everyday language.
   - Navigation links: "Return to Home" on blog listing, "Back to Blog" and "Home" on article pages
 - **SEO Optimization**: Complete meta tags, Open Graph, Twitter Cards on all pages for production launch
 - **User Experience**: Removed all "AI" branding from interface - uses "Smart Mapping", "Map Fields", etc.
+
+## Deployment Configuration
+
+### GitHub Repository
+- **Repository URL**: https://github.com/testdiageo/integration-hub
+- **Status**: Repository created, ready for code push
+- **Documentation**: See GITHUB_SETUP.md for push instructions
+
+### Railway Deployment
+- **Platform**: Railway.app (recommended for production)
+- **Build Configuration**: Automated via railway.json
+  - Build: `npm install && npm run build`
+  - Start: `npm run start`
+  - Migrations: Manual (first deploy only)
+- **Database**: Railway PostgreSQL automatically provisioned
+- **Documentation**: See DEPLOYMENT.md for complete setup instructions
+
+### Environment Variables
+
+#### Required (Application won't start without these)
+- `DATABASE_URL`: PostgreSQL connection string (Railway auto-provides)
+- `SESSION_SECRET`: Secure random string for session encryption
+- `NODE_ENV`: Set to 'production' (Railway auto-sets)
+
+#### Optional (Enables enhanced features)
+- `OPENAI_API_KEY`: Enables smart field mapping (manual mapping still works without)
+- `STRIPE_SECRET_KEY`: Enables payment processing
+- `VITE_STRIPE_PUBLIC_KEY`: Stripe frontend integration
+
+### Production Build Process
+1. **Build Command**: `npm run build`
+   - Builds React frontend with Vite
+   - Bundles Express server with esbuild
+   - Outputs to `dist/` directory
+2. **Start Command**: `npm run start`
+   - Runs production Express server
+   - Serves static frontend files
+   - Binds to Railway's PORT automatically
+3. **Database Migrations**: `npm run db:push`
+   - Run manually first time to avoid data loss
+   - Uses Drizzle Kit to sync schema
+
+### Deployment Checklist
+- [x] GitHub repository created
+- [x] Railway configuration (railway.json) ready
+- [x] Environment variable documentation complete
+- [x] .gitignore configured for production
+- [x] Production build scripts tested
+- [ ] Code pushed to GitHub main branch
+- [ ] Railway project created and configured
+- [ ] Database migrations run on first deploy
+- [ ] Environment variables set in Railway
+- [ ] Production deployment verified
+
+### Next Steps for Production Launch
+1. Push code to GitHub (see GITHUB_SETUP.md)
+2. Create Railway project from GitHub repo
+3. Add PostgreSQL database in Railway
+4. Configure environment variables
+5. Run initial database migration
+6. Verify deployment and test functionality
+7. Configure custom domain (optional)
+8. Set up Stripe for payments
+
+### Blog Content Status
+- Featured article: "XSLT vs DataWeave" (ID 2) - Full content ✓
+- Article 2: "Building ETL Pipelines" (ID 4) - Full content ✓
+- Other articles (IDs 1, 3, 5, 6): Placeholder excerpts only
+
+## Recent Changes (October 12, 2025)
+
+### Deployment Setup
+- Created GitHub repository at https://github.com/testdiageo/integration-hub
+- Configured Railway deployment with safe migration process
+- Updated .env.example with clear required vs optional variables
+- Created comprehensive deployment documentation (DEPLOYMENT.md, GITHUB_SETUP.md)
+- Fixed blog article routing to show featured articles with full content
+
+### Production Readiness
+- All tests passing successfully
+- Railway configuration production-ready
+- Environment variables properly documented
+- Manual migration process prevents data loss
+- Application verified working on local environment
