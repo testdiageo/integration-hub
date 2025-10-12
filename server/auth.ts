@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express, RequestHandler } from "express";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -29,11 +30,20 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Configure PostgreSQL session store
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+    tableName: "sessions",
+  });
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: sessionStore,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -77,10 +87,19 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const user = await storage.createUser({
-        ...req.body,
+      // Whitelist only safe fields - prevent privilege escalation
+      const safeUserData = {
+        username: req.body.username,
         password: await hashPassword(req.body.password),
-      });
+        email: req.body.email || null,
+        firstName: req.body.firstName || null,
+        lastName: req.body.lastName || null,
+        // Force safe defaults for protected fields
+        subscriptionStatus: "free",
+        isAdmin: false,
+      };
+
+      const user = await storage.createUser(safeUserData as any);
 
       // Don't send password back to client
       const { password, ...userWithoutPassword } = user;

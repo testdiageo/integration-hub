@@ -249,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Session is valid, fetch user data
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -261,9 +261,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user subscription (for testing - in production this would be handled by Stripe webhook)
   app.post('/api/auth/subscribe', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const { tier } = req.body; // starter, professional, enterprise
-      const user = await storage.updateUserSubscription(userId, "paid", tier);
+      const userId = req.user.id;
+      const { tier } = req.body; // tier can be: free, one-time, monthly, annual
+      const user = await storage.updateUserSubscription(userId, tier, tier);
       res.json(user);
     } catch (error) {
       console.error("Error updating subscription:", error);
@@ -310,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new integration project (requires login and paid subscription)
   app.post("/api/projects", isAuthenticated, requirePaidSubscription, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertIntegrationProjectSchema.parse(req.body);
       const project = await storage.createProject({ ...validatedData, userId });
       res.json(project);

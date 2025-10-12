@@ -56,7 +56,7 @@ export function XSLTValidationStep({
   const validateGeneratedMutation = useMutation({
     mutationFn: async () => {
       setIsValidating(true);
-      const response = await apiRequest("POST", `/api/projects/${projectId}/validate-generated`);
+      const response = await apiRequest(`/api/projects/${projectId}/validate-generated`, "POST");
       return response.json();
     },
     onSuccess: (validationResult) => {

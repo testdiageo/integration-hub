@@ -34,7 +34,7 @@ export default function IntegrationHub() {
   // Load existing project from localStorage
   const loadProjectMutation = useMutation({
     mutationFn: async (projectId: string) => {
-      const response = await apiRequest("GET", `/api/projects/${projectId}`);
+      const response = await apiRequest(`/api/projects/${projectId}`, "GET");
       return response.json();
     },
     onSuccess: (project) => {
@@ -51,7 +51,7 @@ export default function IntegrationHub() {
   // Create initial project
   const createProjectMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/projects", {
+      const response = await apiRequest("/api/projects", "POST", {
         name: "New Integration Project",
         description: "Intelligent field mapping and automated transformations",
         status: "draft",
