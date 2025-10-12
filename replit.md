@@ -1,7 +1,7 @@
 # Integration Hub
 
 ## Overview
-Integration Hub is a full-stack SaaS web application offering intelligent data integration through automated field mapping and transformation logic generation. It includes a marketing website and a 6-step integration workflow with a freemium trial. Users can upload data, receive smart mapping suggestions, generate XSLT and DataWeave transformations, validate results, and download production-ready code. The platform is designed for commercial B2B launch, featuring Stripe payment integration, comprehensive SEO, and trial-to-paid conversion optimization.
+Integration Hub is a full-stack SaaS web application offering intelligent data integration through automated field mapping and transformation logic generation. It includes a marketing website and a 6-step integration workflow with a four-tier subscription model (free, one-time, monthly, annual). Users create an account with username/password authentication, then can upload data, receive smart mapping suggestions, generate XSLT and DataWeave transformations, validate results, and download production-ready code. The platform is designed for commercial B2B launch, featuring Stripe payment integration, comprehensive SEO, and free-to-paid conversion optimization.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -43,11 +43,14 @@ Preferred communication style: Simple, everyday language.
 - **Validation Preview**: Displays transformed data rows (trial limitations apply)
 
 ### Authentication and Authorization
-- **Authentication Provider**: Replit Auth (OpenID Connect) with Google, GitHub, email/password
-- **Session Management**: Passport.js with Express-session and PostgreSQL store
-- **User Database**: Users table with subscription status (trial/paid), tier, and admin role
+- **Authentication Provider**: Traditional username/password authentication using Passport.js local strategy
+- **Password Security**: Scrypt hashing with salt for secure credential storage
+- **Session Management**: Passport.js with Express-session and PostgreSQL store (connect-pg-simple)
+- **Session Persistence**: PostgreSQL-backed sessions with 7-day TTL, survives server restarts
+- **User Database**: Users table with subscription status (free/one-time/monthly/annual), tier, and admin role
 - **Protected Routes**: Middleware for authentication (`isAuthenticated`), subscription (`requirePaidSubscription`), and admin access (`requireAdmin`)
-- **Admin System**: Admin dashboard at `/admin` for user and subscription management; `isAdmin` flag for role-based access.
+- **Admin System**: Admin dashboard at `/admin` for user and subscription management; `isAdmin` flag for role-based access
+- **Security**: Whitelisted registration fields prevent privilege escalation; password never sent to client
 
 ## External Dependencies
 
@@ -79,8 +82,13 @@ Preferred communication style: Simple, everyday language.
 - **XSLT Processing**: xmldom, xslt-processor
 
 ### Commercial Features
-- **Pricing Plans**: Three-tier model
+- **Pricing Plans**: Four-tier subscription model (free, one-time, monthly, annual)
 - **Payment Integration**: Stripe SDK
-- **Freemium Trial Model**: Feature limitations for free users (e.g., row preview, downloads)
+- **Freemium Model**: Free tier with limited features (3 projects, 5 row preview, 14-day retention)
+- **Subscription Tiers**: 
+  - Free: $0/forever - Limited features, 3 projects
+  - One-Time: $49 - 10 projects, 60-day retention
+  - Monthly: $99/month - Unlimited projects and features
+  - Annual: $999/year - Everything in Monthly + 2 months free
 - **Marketing Pages**: Homepage, Blog, Pricing pages
 - **SEO Optimization**: Comprehensive meta tags, Open Graph, Twitter Cards
