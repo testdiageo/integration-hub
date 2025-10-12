@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileUpload } from "@/components/file-upload";
+import { useSubscription } from "@/contexts/subscription-context";
+import { Link } from "wouter";
 import { 
   CheckCircle, 
   XCircle, 
@@ -12,7 +14,9 @@ import {
   FileText, 
   Upload, 
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  Crown
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { type UploadedFile } from "@shared/schema";
@@ -36,6 +40,7 @@ export function XSLTValidationStep({
 }: XSLTValidationProps) {
   const [isValidating, setIsValidating] = useState(false);
   const queryClient = useQueryClient();
+  const { isTrial, isPaid } = useSubscription();
 
   // Get project files
   const { data: files = [], refetch: refetchFiles } = useQuery({
@@ -284,6 +289,73 @@ export function XSLTValidationStep({
               </Alert>
             )}
 
+            {/* Transformed Data Preview */}
+            {latestValidationResult.transformedData && latestValidationResult.transformedData.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Transformed Data Preview</h3>
+                  {isTrial && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Lock className="h-3 w-3" />
+                      Free Trial - 3 Rows Only
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted">
+                        <tr>
+                          {Object.keys(latestValidationResult.transformedData[0] || {}).map((key) => (
+                            <th key={key} className="px-4 py-2 text-left font-medium">
+                              {key}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {latestValidationResult.transformedData
+                          .slice(0, isTrial ? 3 : undefined)
+                          .map((row: any, idx: number) => (
+                            <tr key={idx} className="border-t" data-testid={`preview-row-${idx}`}>
+                              {Object.values(row).map((value: any, cellIdx: number) => (
+                                <td key={cellIdx} className="px-4 py-2">
+                                  {String(value)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {isTrial && latestValidationResult.transformedData.length > 3 && (
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Crown className="h-5 w-5 text-amber-500" />
+                          <div>
+                            <p className="font-medium text-sm">
+                              {latestValidationResult.transformedData.length - 3} more rows available with Pro
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Upgrade to see all transformed data and download files
+                            </p>
+                          </div>
+                        </div>
+                        <Button asChild size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600" data-testid="button-upgrade-from-preview">
+                          <Link href="/pricing">
+                            Upgrade Now
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex justify-between pt-4">
               <Button variant="outline" onClick={() => validateGeneratedMutation.mutate()}>
@@ -292,10 +364,19 @@ export function XSLTValidationStep({
               </Button>
               
               {latestValidationResult.isValid && (
-                <Button onClick={onProceedToSuccess} data-testid="button-proceed-success">
-                  Proceed to Downloads
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                <>
+                  {isTrial ? (
+                    <Button disabled className="gap-2" data-testid="button-proceed-success-locked">
+                      <Lock className="h-4 w-4" />
+                      Download Locked - Upgrade Required
+                    </Button>
+                  ) : (
+                    <Button onClick={onProceedToSuccess} data-testid="button-proceed-success">
+                      Proceed to Downloads
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </CardContent>

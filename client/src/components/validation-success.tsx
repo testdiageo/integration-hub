@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSubscription } from "@/contexts/subscription-context";
+import { Link } from "wouter";
 import { 
   CheckCircle, 
   Download, 
@@ -9,7 +12,9 @@ import {
   FileText,
   Sparkles,
   ArrowLeft,
-  Workflow
+  Workflow,
+  Lock,
+  Crown
 } from "lucide-react";
 
 interface ValidationSuccessProps {
@@ -29,8 +34,12 @@ export function ValidationSuccessStep({
   validationResult,
   onBackToValidation 
 }: ValidationSuccessProps) {
+  const { isTrial, isPaid } = useSubscription();
 
   const handleDownload = (fileType: string) => {
+    if (isTrial) {
+      return; // Prevent download for trial users
+    }
     let endpoint = '';
     let filename = '';
     
@@ -95,15 +104,37 @@ export function ValidationSuccessStep({
         </CardContent>
       </Card>
 
+      {/* Trial Restriction Message */}
+      {isTrial && (
+        <Alert className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200">
+          <Crown className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">Downloads are disabled in Free Trial</p>
+              <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">Upgrade to download XSLT, DataWeave, and mapping files</p>
+            </div>
+            <Button asChild className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700" data-testid="button-upgrade-from-success">
+              <Link href="/pricing">
+                Upgrade Now
+              </Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Download Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
+            {isTrial && <Lock className="h-5 w-5 text-muted-foreground" />}
             <Download className="h-5 w-5" />
             <span>Download Your Files</span>
+            {isTrial && <Badge variant="secondary">Pro Feature</Badge>}
           </CardTitle>
           <p className="text-muted-foreground">
-            Download all generated transformation files ready for production deployment
+            {isTrial 
+              ? "Upgrade to download all generated transformation files" 
+              : "Download all generated transformation files ready for production deployment"}
           </p>
         </CardHeader>
         <CardContent>
@@ -127,9 +158,10 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('xslt')}
                   className="w-full bg-blue-600 hover:bg-blue-700"
                   data-testid="button-download-success-xslt"
+                  disabled={isTrial}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download XSLT
+                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                  {isTrial ? "Locked" : "Download XSLT"}
                 </Button>
               </CardContent>
             </Card>
@@ -153,9 +185,10 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('dataweave')}
                   className="w-full bg-amber-600 hover:bg-amber-700"
                   data-testid="button-download-success-dataweave"
+                  disabled={isTrial}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download DataWeave
+                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                  {isTrial ? "Locked" : "Download DataWeave"}
                 </Button>
               </CardContent>
             </Card>
@@ -179,9 +212,10 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('mapping')}
                   className="w-full bg-green-600 hover:bg-green-700"
                   data-testid="button-download-success-mapping"
+                  disabled={isTrial}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Mappings
+                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                  {isTrial ? "Locked" : "Download Mappings"}
                 </Button>
               </CardContent>
             </Card>
@@ -205,9 +239,10 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('documentation')}
                   className="w-full bg-purple-600 hover:bg-purple-700"
                   data-testid="button-download-success-documentation"
+                  disabled={isTrial}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Docs
+                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
+                  {isTrial ? "Locked" : "Download Docs"}
                 </Button>
               </CardContent>
             </Card>

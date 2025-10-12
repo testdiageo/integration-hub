@@ -2,6 +2,8 @@ import { SEOHead } from "@/components/seo-head";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useSubscription } from "@/contexts/subscription-context";
+import { useToast } from "@/hooks/use-toast";
 import { Check, Sparkles, Zap, Crown } from "lucide-react";
 import { Link } from "wouter";
 
@@ -94,6 +96,25 @@ const faqs = [
 ];
 
 export default function Pricing() {
+  const { isTrial, isPaid, setSubscriptionStatus } = useSubscription();
+  const { toast } = useToast();
+
+  const handleActivatePlan = (planName: string) => {
+    setSubscriptionStatus("paid");
+    toast({
+      title: "✅ Plan Activated!",
+      description: `${planName} plan is now active. All features unlocked!`,
+    });
+  };
+
+  const handleStartTrial = () => {
+    setSubscriptionStatus("trial");
+    toast({
+      title: "Free Trial Started",
+      description: "You're now on a free trial with limited features.",
+    });
+  };
+
   return (
     <>
       <SEOHead
@@ -161,15 +182,28 @@ export default function Pricing() {
                     </CardHeader>
 
                     <CardContent>
-                      <Button
-                        className="w-full mb-6"
-                        variant={plan.highlighted ? "default" : "outline"}
-                        size="lg"
-                        asChild
-                        data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                      >
-                        <Link href="/hub">{plan.cta}</Link>
-                      </Button>
+                      <div className="space-y-2 mb-6">
+                        <Button
+                          className="w-full"
+                          variant={plan.highlighted ? "default" : "outline"}
+                          size="lg"
+                          asChild
+                          data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                        >
+                          <Link href="/hub">{plan.cta}</Link>
+                        </Button>
+                        {plan.name !== "Starter" && (
+                          <Button
+                            className="w-full"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleActivatePlan(plan.name)}
+                            data-testid={`button-activate-${plan.name.toLowerCase()}`}
+                          >
+                            {isPaid ? "✓ Plan Active" : `Activate ${plan.name}`}
+                          </Button>
+                        )}
+                      </div>
 
                       <div className="space-y-3">
                         {plan.features.map((feature, featureIdx) => (
@@ -209,6 +243,34 @@ export default function Pricing() {
                 </Card>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Subscription Status */}
+        <section className="py-8 bg-muted/20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Card>
+              <CardContent className="py-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">Current Status</h3>
+                    <p className="text-muted-foreground text-sm">
+                      {isPaid ? "You have full access to all features" : "You're on a free trial with limited features"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant={isPaid ? "default" : "secondary"} className="text-sm">
+                      {isPaid ? "Pro User" : "Free Trial"}
+                    </Badge>
+                    {isPaid && (
+                      <Button variant="outline" size="sm" onClick={handleStartTrial} data-testid="button-switch-to-trial">
+                        Switch to Trial (Demo)
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
