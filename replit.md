@@ -2,7 +2,7 @@
 
 ## Overview
 
-Integration Hub is a full-stack SaaS web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. The platform features a beautiful marketing website with homepage, blog, and pricing pages, plus a comprehensive 6-step integration workflow. Users upload source and target data files, receive AI-powered field mappings, generate XSLT and DataWeave transformations, validate results, and download production-ready code. The application is designed for commercial B2B launch with Stripe payment integration (ready to configure) and complete SEO optimization.
+Integration Hub is a full-stack SaaS web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. The platform features a beautiful marketing website with homepage, blog, and pricing pages, plus a comprehensive 6-step integration workflow with a freemium trial model. Users upload source and target data files, receive smart field mapping suggestions, generate XSLT and DataWeave transformations, validate results, and download production-ready code. The application is designed for commercial B2B launch with Stripe payment integration (ready to configure), complete SEO optimization, and trial-to-paid conversion optimization.
 
 ## User Preferences
 
@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 - **Pages**: Homepage, Integration Hub (main app), Blog, Pricing, and 404 error page
 - **UI Components**: Built with shadcn/ui component library based on Radix UI primitives
 - **Styling**: Tailwind CSS with CSS variables for theming, custom animations, and gradient effects
-- **State Management**: TanStack Query (React Query) for server state management and caching
+- **State Management**: TanStack Query (React Query) for server state management and caching, React Context for subscription status
 - **Build System**: Vite for fast development and optimized production builds
 - **SEO**: Complete meta tags, Open Graph, Twitter Cards, and canonical URLs on all pages
 - **Navigation**: Sticky header with mobile-responsive menu and active route highlighting
@@ -42,13 +42,14 @@ Preferred communication style: Simple, everyday language.
 - **XSLT Validation**: Stores validation results with confidence scores, warnings, errors, and transformation match status
 - **Schema Versioning**: JSON-based schema storage allowing flexible data structure evolution
 
-### AI Integration and Processing
-- **AI Service**: OpenAI GPT-4 integration for intelligent field mapping suggestions
+### Smart Mapping and Processing
+- **Intelligent Mapping**: OpenAI GPT-4 integration for smart field mapping suggestions (no AI branding in UI)
 - **File Analysis**: Automated schema detection supporting multiple file formats (CSV, JSON, XML, Excel)
 - **Dual Format Support**: Generates both XSLT and DataWeave (MuleSoft) transformation code
 - **XSLT Validation**: Real XSLT transformation testing with XML parsing, structure validation, and expected output comparison
-- **Confidence Scoring**: AI-generated confidence scores for mapping quality assessment and transformation accuracy
+- **Confidence Scoring**: Automated confidence scores for mapping quality assessment and transformation accuracy
 - **Transformation Logic**: Automated generation of data transformation code with proper zero-padding, decimal formatting, and date conversions
+- **Validation Preview**: Displays transformed data rows with trial limitations (3 rows for free users, unlimited for paid)
 
 ### Authentication and Authorization
 - **Session Management**: Express-session with PostgreSQL store for server-side session persistence
@@ -89,9 +90,16 @@ Preferred communication style: Simple, everyday language.
 - **File Upload**: Local storage with multer for handling multipart form data
 - **XSLT Processing**: xmldom and xslt-processor for XML/XSLT parsing and transformation validation
 
-### Commercial Features
-- **Pricing Plans**: Three-tier pricing model (Starter one-time, Professional monthly, Enterprise annual)
-- **Payment Integration**: Stripe SDK integrated with @stripe/stripe-js and @stripe/react-stripe-js
+### Commercial Features and Freemium Model
+- **Pricing Plans**: Three-tier pricing model (Starter $49 one-time, Professional $99/month, Enterprise $899/year)
+- **Payment Integration**: Stripe SDK integrated with @stripe/stripe-js and @stripe/react-stripe-js (ready for API keys)
+- **Freemium Trial Model**: 
+  - Free trial users: 3-row preview limit on validation page, downloads disabled, success page locked
+  - Paid users: Unlimited row preview, full download access, complete workflow access
+  - Subscription context with localStorage persistence for demo/testing
+  - Prominent upgrade CTAs on validation and success pages with pricing links
+  - Temporary activation UI on pricing page (to be replaced with Stripe checkout)
 - **Marketing Pages**: Professional homepage with hero section, features showcase, stats, and CTA
 - **Blog Platform**: Ready-to-use blog with article listings and category filtering
 - **SEO Optimization**: Complete meta tags, Open Graph, Twitter Cards on all pages for production launch
+- **User Experience**: Removed all "AI" branding from interface - uses "Smart Mapping", "Map Fields", etc.
