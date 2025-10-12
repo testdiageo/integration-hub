@@ -101,7 +101,9 @@ Preferred communication style: Simple, everyday language.
   - Temporary activation UI on pricing page (to be replaced with Stripe checkout)
 - **Marketing Pages**: Professional homepage with hero section, features showcase, stats, and CTA
 - **Blog Platform**: Ready-to-use blog with article listings, full article pages, and category filtering
-  - Featured article: "XSLT vs DataWeave: Choosing the Right Transformation Language"
+  - Full articles available:
+    - "XSLT vs DataWeave: Choosing the Right Transformation Language" (Technical Deep Dive)
+    - "Building ETL Pipelines: A Complete Guide" (Tutorial)
   - Navigation links: "Return to Home" on blog listing, "Back to Blog" and "Home" on article pages
 - **SEO Optimization**: Complete meta tags, Open Graph, Twitter Cards on all pages for production launch
 - **User Experience**: Removed all "AI" branding from interface - uses "Smart Mapping", "Map Fields", etc.
