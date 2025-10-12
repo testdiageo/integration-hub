@@ -91,7 +91,7 @@ Preferred communication style: Simple, everyday language.
 - **XSLT Processing**: xmldom and xslt-processor for XML/XSLT parsing and transformation validation
 
 ### Commercial Features and Freemium Model
-- **Pricing Plans**: Three-tier pricing model (Starter $49 one-time, Professional $99/month, Enterprise $899/year)
+- **Pricing Plans**: Three-tier pricing model (Starter $49 one-time, Professional $999 one-time, Enterprise $1999 one-time)
 - **Payment Integration**: Stripe SDK integrated with @stripe/stripe-js and @stripe/react-stripe-js (ready for API keys)
 - **Freemium Trial Model**: 
   - Free trial users: 3-row preview limit on validation page, downloads disabled, success page locked

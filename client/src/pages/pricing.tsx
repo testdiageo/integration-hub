@@ -30,8 +30,8 @@ const pricingPlans = [
   {
     name: "Professional",
     description: "For teams building integrations at scale",
-    price: "99",
-    period: "per month",
+    price: "999",
+    period: "one-time",
     icon: Sparkles,
     badge: "Most Popular",
     features: [
@@ -51,8 +51,8 @@ const pricingPlans = [
   {
     name: "Enterprise",
     description: "For large organizations with custom needs",
-    price: "899",
-    period: "per year",
+    price: "1999",
+    period: "one-time",
     icon: Crown,
     badge: "Best Value",
     features: [
