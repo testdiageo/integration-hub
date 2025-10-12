@@ -240,9 +240,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes - this endpoint doesn't require middleware, but validates session internally
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
+      // Use Passport's isAuthenticated() to safely check session validity
+      if (!req.isAuthenticated()) {
+        return res.json(null);
+      }
+      
+      // Session is valid, fetch user data
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);

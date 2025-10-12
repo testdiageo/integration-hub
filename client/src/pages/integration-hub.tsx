@@ -10,9 +10,10 @@ import { TransformationPreview } from "@/components/transformation-preview";
 import { XSLTValidationStep } from "@/components/xslt-validation";
 import { ValidationSuccessStep } from "@/components/validation-success";
 import { SEOHead } from "@/components/seo-head";
-import { Save, RefreshCcw, ArrowRightLeft } from "lucide-react";
+import { Save, RefreshCcw, ArrowRightLeft, LogIn, Lock } from "lucide-react";
 import { type IntegrationProject, type UploadedFile, type FieldMapping } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 
 const steps = [
   { number: 1, label: "Upload Files" },
@@ -28,6 +29,7 @@ export default function IntegrationHub() {
   const [currentProject, setCurrentProject] = useState<IntegrationProject | null>(null);
   const [hasInitializedStep, setHasInitializedStep] = useState(false);
   const queryClient = useQueryClient();
+  const { user, isLoading, isAuthenticated, isPaidUser } = useAuth();
 
   // Load existing project from localStorage
   const loadProjectMutation = useMutation({
@@ -76,8 +78,8 @@ export default function IntegrationHub() {
   });
 
   useEffect(() => {
-    // Check for existing project in localStorage first
-    if (!currentProject) {
+    // Only create/load project if user is authenticated
+    if (!currentProject && isAuthenticated && !isLoading) {
       const savedProjectId = localStorage.getItem('integrationhub-current-project');
       if (savedProjectId) {
         loadProjectMutation.mutate(savedProjectId);
@@ -85,7 +87,7 @@ export default function IntegrationHub() {
         createProjectMutation.mutate();
       }
     }
-  }, []);
+  }, [isAuthenticated, isLoading]);
 
   // Auto-advance to correct step based on loaded data (only on initial load)
   useEffect(() => {
@@ -174,6 +176,68 @@ export default function IntegrationHub() {
     manualReviewNeeded: (mappings as FieldMapping[]).filter((m: FieldMapping) => m.mappingType === "unmapped").length,
   } : undefined;
 
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth required message for unauthenticated users
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="pt-6 text-center">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center mx-auto mb-4">
+              <Lock className="h-8 w-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground mb-6">
+              Please log in to access the Integration Hub and create data transformation projects.
+            </p>
+            <Button className="w-full" asChild data-testid="button-login-required">
+              <a href="/api/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Log In to Continue
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show subscription required message for trial users
+  if (!isPaidUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="pt-6 text-center">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center mx-auto mb-4">
+              <ArrowRightLeft className="h-8 w-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Subscription Required</h2>
+            <p className="text-muted-foreground mb-6">
+              Upgrade to a paid plan to access the Integration Hub and create unlimited data transformation projects.
+            </p>
+            <Button className="w-full" asChild data-testid="button-upgrade-required">
+              <a href="/pricing">
+                View Pricing Plans
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading while project is being created
   if (!currentProject) {
     return (
       <div className="min-h-screen flex items-center justify-center">
