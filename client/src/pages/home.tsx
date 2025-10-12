@@ -40,7 +40,7 @@ export default function Home() {
               </h1>
               
               <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-fade-in-up animation-delay-200" data-testid="text-hero-description">
-                Upload your source and target files. Let AI map fields, generate transformation logic, and create production-ready XSLT or DataWeave code in minutes.
+                Upload your source and target files. Map fields, generate transformation logic, and create production-ready XSLT or DataWeave code in minutes.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animation-delay-400">
@@ -90,7 +90,7 @@ export default function Home() {
               {[
                 {
                   icon: Sparkles,
-                  title: "AI Field Mapping",
+                  title: "Smart Field Mapping",
                   description: "Intelligent algorithms analyze your data and suggest optimal field mappings with confidence scores",
                 },
                 {
@@ -148,7 +148,7 @@ export default function Home() {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 { step: 1, title: "Upload Files", description: "Drop your source and target data files" },
-                { step: 2, title: "AI Mapping", description: "Our AI suggests intelligent field mappings" },
+                { step: 2, title: "Smart Mapping", description: "Intelligent field mapping suggestions" },
                 { step: 3, title: "Review & Adjust", description: "Review mappings and make adjustments" },
                 { step: 4, title: "Generate Code", description: "Choose XSLT or DataWeave format" },
                 { step: 5, title: "Validate", description: "Test transformations with sample data" },

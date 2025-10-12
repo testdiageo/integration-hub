@@ -139,7 +139,7 @@ export function FieldMappingComponent({
 
   if (mappings.length === 0) {
     return (
-      <Card data-testid="ai-analysis-section">
+      <Card data-testid="mapping-analysis-section">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -147,7 +147,7 @@ export function FieldMappingComponent({
                 <Brain className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg">AI Field Mapping</CardTitle>
+                <CardTitle className="text-lg">Field Mapping</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Generate intelligent field mapping suggestions
                 </p>
@@ -166,7 +166,7 @@ export function FieldMappingComponent({
               ) : (
                 <>
                   <Brain className="mr-2 h-4 w-4" />
-                  Analyze & Map Fields
+                  Map Fields
                 </>
               )}
             </Button>
@@ -175,9 +175,9 @@ export function FieldMappingComponent({
         <CardContent>
           <div className="text-center py-8">
             <Brain className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Ready for AI Analysis</h3>
+            <h3 className="text-lg font-medium mb-2">Ready to Map Fields</h3>
             <p className="text-muted-foreground mb-6">
-              Upload both source and target files, then click "Analyze & Map Fields" to generate intelligent field mappings using AI.
+              Upload both source and target files, then click "Map Fields" to generate intelligent field mapping suggestions.
             </p>
           </div>
 
@@ -204,7 +204,7 @@ export function FieldMappingComponent({
                   <CheckCircle className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">AI Analysis Complete</CardTitle>
+                  <CardTitle className="text-lg">Mapping Analysis Complete</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Intelligent field mapping suggestions ready
                   </p>
