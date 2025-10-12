@@ -9,7 +9,8 @@ import { FieldMappingComponent } from "@/components/field-mapping";
 import { TransformationPreview } from "@/components/transformation-preview";
 import { XSLTValidationStep } from "@/components/xslt-validation";
 import { ValidationSuccessStep } from "@/components/validation-success";
-import { ArrowRightLeft, Bell, Settings, User, Save } from "lucide-react";
+import { SEOHead } from "@/components/seo-head";
+import { Save, RefreshCcw, ArrowRightLeft } from "lucide-react";
 import { type IntegrationProject, type UploadedFile, type FieldMapping } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -185,56 +186,48 @@ export default function IntegrationHub() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <ArrowRightLeft className="text-primary-foreground text-sm" />
-                </div>
-                <h1 className="text-xl font-bold" data-testid="app-title">IntegrationHub</h1>
+    <>
+      <SEOHead
+        title="Integration Workflow - IntegrationHub | AI-Powered Data Transformation"
+        description="Create intelligent data integrations with AI-powered field mapping. Upload files, generate transformations, and download production-ready XSLT or DataWeave code."
+        keywords="data integration workflow, field mapping tool, XSLT generator, DataWeave creator, transformation workflow"
+        canonicalUrl={`${window.location.origin}/hub`}
+      />
+
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+        {/* Hero Section */}
+        <section className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2" data-testid="project-title">
+                  {currentProject.name}
+                </h1>
+                <p className="text-lg text-muted-foreground" data-testid="project-description">
+                  {currentProject.description}
+                </p>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                <User className="text-secondary-foreground text-sm" />
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="capitalize" data-testid="project-status">
+                  {currentProject.status}
+                </Badge>
+                <Button variant="outline" size="sm" data-testid="button-save-project">
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+                <Button variant="outline" size="sm" data-testid="button-reset-project">
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  New Project
+                </Button>
               </div>
             </div>
           </div>
-        </div>
-      </header>
+        </section>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Project Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold mb-2" data-testid="project-title">
-                {currentProject.name}
-              </h2>
-              <p className="text-muted-foreground" data-testid="project-description">
-                {currentProject.description}
-              </p>
-            </div>
-            <Button variant="outline">
-              <Save className="mr-2 h-4 w-4" />
-              Save Draft
-            </Button>
-          </div>
-        </div>
-
-        {/* Step Indicator */}
-        <StepIndicator currentStep={currentStep} steps={steps} />
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Step Indicator */}
+          <StepIndicator currentStep={currentStep} steps={steps} />
 
         {/* Step Content */}
         {currentStep === 1 && (
@@ -313,7 +306,8 @@ export default function IntegrationHub() {
             onBackToValidation={() => setCurrentStep(5)}
           />
         )}
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Integration Hub is a full-stack web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. The system features a comprehensive 5-step workflow: users upload source and target data files, validate XSLT transformations, generate AI-powered field mappings, generate transformation logic, and deploy integrations. The application includes XSLT validation capabilities that allow users to test XML transformations against expected outputs with detailed confidence scoring and error reporting.
+Integration Hub is a full-stack SaaS web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. The platform features a beautiful marketing website with homepage, blog, and pricing pages, plus a comprehensive 6-step integration workflow. Users upload source and target data files, receive AI-powered field mappings, generate XSLT and DataWeave transformations, validate results, and download production-ready code. The application is designed for commercial B2B launch with Stripe payment integration (ready to configure) and complete SEO optimization.
 
 ## User Preferences
 
@@ -12,11 +12,14 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript in a Single Page Application (SPA) architecture
-- **Routing**: Uses Wouter for lightweight client-side routing
+- **Routing**: Uses Wouter for lightweight client-side routing with multi-page support
+- **Pages**: Homepage, Integration Hub (main app), Blog, Pricing, and 404 error page
 - **UI Components**: Built with shadcn/ui component library based on Radix UI primitives
-- **Styling**: Tailwind CSS with CSS variables for theming and customization
+- **Styling**: Tailwind CSS with CSS variables for theming, custom animations, and gradient effects
 - **State Management**: TanStack Query (React Query) for server state management and caching
 - **Build System**: Vite for fast development and optimized production builds
+- **SEO**: Complete meta tags, Open Graph, Twitter Cards, and canonical URLs on all pages
+- **Navigation**: Sticky header with mobile-responsive menu and active route highlighting
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js framework
@@ -42,9 +45,10 @@ Preferred communication style: Simple, everyday language.
 ### AI Integration and Processing
 - **AI Service**: OpenAI GPT-4 integration for intelligent field mapping suggestions
 - **File Analysis**: Automated schema detection supporting multiple file formats (CSV, JSON, XML, Excel)
+- **Dual Format Support**: Generates both XSLT and DataWeave (MuleSoft) transformation code
 - **XSLT Validation**: Real XSLT transformation testing with XML parsing, structure validation, and expected output comparison
-- **Confidence Scoring**: AI-generated confidence scores for mapping quality assessment and XSLT transformation accuracy
-- **Transformation Logic**: Automated generation of data transformation code based on field mappings
+- **Confidence Scoring**: AI-generated confidence scores for mapping quality assessment and transformation accuracy
+- **Transformation Logic**: Automated generation of data transformation code with proper zero-padding, decimal formatting, and date conversions
 
 ### Authentication and Authorization
 - **Session Management**: Express-session with PostgreSQL store for server-side session persistence
@@ -79,7 +83,15 @@ Preferred communication style: Simple, everyday language.
 - **Type Checking**: TypeScript compiler with strict mode configuration
 
 ### External Services
-- **Database Hosting**: Neon Database for serverless PostgreSQL hosting
+- **Database Hosting**: Neon Database for serverless PostgreSQL hosting (ready to migrate to Railway/Supabase)
 - **AI Services**: OpenAI API for natural language processing and mapping intelligence
+- **Payment Processing**: Stripe integration (configured, ready for API keys)
 - **File Upload**: Local storage with multer for handling multipart form data
 - **XSLT Processing**: xmldom and xslt-processor for XML/XSLT parsing and transformation validation
+
+### Commercial Features
+- **Pricing Plans**: Three-tier pricing model (Starter one-time, Professional monthly, Enterprise annual)
+- **Payment Integration**: Stripe SDK integrated with @stripe/stripe-js and @stripe/react-stripe-js
+- **Marketing Pages**: Professional homepage with hero section, features showcase, stats, and CTA
+- **Blog Platform**: Ready-to-use blog with article listings and category filtering
+- **SEO Optimization**: Complete meta tags, Open Graph, Twitter Cards on all pages for production launch
