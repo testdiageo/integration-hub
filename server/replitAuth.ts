@@ -179,3 +179,26 @@ export const requirePaidSubscription: RequestHandler = async (req, res, next) =>
     res.status(500).json({ message: "Error checking subscription status" });
   }
 };
+
+// Middleware to check if user is admin
+export const requireAdmin: RequestHandler = async (req, res, next) => {
+  const user = req.user as any;
+  
+  if (!req.isAuthenticated() || !user.claims?.sub) {
+    return res.status(401).json({ message: "Unauthorized - Please log in" });
+  }
+
+  try {
+    const dbUser = await storage.getUser(user.claims.sub);
+    
+    if (!dbUser || !dbUser.isAdmin) {
+      return res.status(403).json({ 
+        message: "Admin access required"
+      });
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Error checking admin status" });
+  }
+};

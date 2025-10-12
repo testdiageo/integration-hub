@@ -10,6 +10,7 @@ import IntegrationHub from "@/pages/integration-hub";
 import Blog from "@/pages/blog";
 import BlogArticle from "@/pages/blog-article";
 import Pricing from "@/pages/pricing";
+import AdminDashboard from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/blog/:id" component={BlogArticle} />
         <Route path="/blog" component={Blog} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/admin" component={AdminDashboard} />
         <Route component={NotFound} />
       </Switch>
     </>

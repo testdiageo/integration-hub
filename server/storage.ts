@@ -15,6 +15,10 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserSubscription(id: string, subscriptionStatus: string, subscriptionTier?: string): Promise<User>;
+  
+  // Admin user operations
+  getAllUsers(): Promise<User[]>;
+  updateUserAdmin(id: string, isAdmin: boolean): Promise<User>;
 
   // Integration Projects
   createProject(project: InsertIntegrationProject): Promise<IntegrationProject>;
@@ -67,6 +71,7 @@ export class MemStorage implements IStorage {
       subscriptionStatus: existing?.subscriptionStatus || "trial",
       subscriptionTier: existing?.subscriptionTier || null,
       subscriptionExpiresAt: existing?.subscriptionExpiresAt || null,
+      isAdmin: existing?.isAdmin || false,
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     };
@@ -85,6 +90,29 @@ export class MemStorage implements IStorage {
       ...existing,
       subscriptionStatus,
       subscriptionTier: subscriptionTier || existing.subscriptionTier,
+      updatedAt: new Date(),
+    };
+    
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  // Admin user operations
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values()).sort((a, b) => 
+      b.createdAt!.getTime() - a.createdAt!.getTime()
+    );
+  }
+
+  async updateUserAdmin(id: string, isAdmin: boolean): Promise<User> {
+    const existing = this.users.get(id);
+    if (!existing) {
+      throw new Error("User not found");
+    }
+    
+    const updated: User = {
+      ...existing,
+      isAdmin,
       updatedAt: new Date(),
     };
     

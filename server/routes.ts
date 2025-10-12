@@ -7,7 +7,7 @@ import { storage } from "./storage";
 import { FileProcessor } from "./services/fileProcessor";
 import { AIMappingService } from "./services/aiMapping";
 import { XSLTValidatorService } from "./services/xsltValidator";
-import { setupAuth, isAuthenticated, requirePaidSubscription } from "./replitAuth";
+import { setupAuth, isAuthenticated, requirePaidSubscription, requireAdmin } from "./replitAuth";
 import { 
   insertIntegrationProjectSchema,
   fileUploadSchema,
@@ -268,6 +268,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating subscription:", error);
       res.status(500).json({ message: "Failed to update subscription" });
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/users', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id/admin', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { isAdmin } = req.body;
+      const user = await storage.updateUserAdmin(req.params.id, isAdmin);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user admin status:", error);
+      res.status(500).json({ message: "Failed to update user admin status" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id/subscription', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { subscriptionStatus, subscriptionTier } = req.body;
+      const user = await storage.updateUserSubscription(req.params.id, subscriptionStatus, subscriptionTier);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user subscription:", error);
+      res.status(500).json({ message: "Failed to update user subscription" });
     }
   });
 

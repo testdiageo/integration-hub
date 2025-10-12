@@ -12,5 +12,6 @@ export function useAuth() {
     isLoading,
     isAuthenticated: !!user,
     isPaidUser: user?.subscriptionStatus === "paid",
+    isAdmin: user?.isAdmin || false,
   };
 }

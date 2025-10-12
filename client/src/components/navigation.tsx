@@ -7,13 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 export function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, isLoading, isAuthenticated, isPaidUser } = useAuth();
+  const { user, isLoading, isAuthenticated, isPaidUser, isAdmin } = useAuth();
 
   const navItems = [
     { path: "/", label: "Home" },
     { path: "/hub", label: "Integration Hub" },
     { path: "/blog", label: "Blog" },
     { path: "/pricing", label: "Pricing" },
+    ...(isAdmin ? [{ path: "/admin", label: "Admin" }] : []),
   ];
 
   return (

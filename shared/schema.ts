@@ -24,6 +24,7 @@ export const users = pgTable("users", {
   subscriptionStatus: varchar("subscription_status").notNull().default("trial"), // trial, paid, cancelled
   subscriptionTier: varchar("subscription_tier"), // starter, professional, enterprise
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  isAdmin: boolean("is_admin").notNull().default(false), // Admin access flag
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
