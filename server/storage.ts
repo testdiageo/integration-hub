@@ -6,19 +6,27 @@ import {
   type FieldMapping,
   type InsertFieldMapping,
   type User,
-  type UpsertUser
+  type InsertUser
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import session from "express-session";
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
   updateUserSubscription(id: string, subscriptionStatus: string, subscriptionTier?: string): Promise<User>;
   
   // Admin user operations
   getAllUsers(): Promise<User[]>;
   updateUserAdmin(id: string, isAdmin: boolean): Promise<User>;
+  
+  // Session storage
+  sessionStore: any;
 
   // Integration Projects
   createProject(project: InsertIntegrationProject): Promise<IntegrationProject>;
@@ -45,34 +53,44 @@ export class MemStorage implements IStorage {
   private projects: Map<string, IntegrationProject>;
   private files: Map<string, UploadedFile>;
   private mappings: Map<string, FieldMapping>;
+  public sessionStore: session.SessionStore;
 
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.files = new Map();
     this.mappings = new Map();
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // 24 hours
+    });
   }
 
-  // User operations (required for Replit Auth)
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const existing = this.users.get(userData.id!);
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.username === username);
+  }
+
+  async createUser(userData: InsertUser): Promise<User> {
+    const id = randomUUID();
     const now = new Date();
     
     const user: User = {
-      id: userData.id!,
+      id,
+      username: userData.username,
+      password: userData.password,
       email: userData.email || null,
       firstName: userData.firstName || null,
       lastName: userData.lastName || null,
       profileImageUrl: userData.profileImageUrl || null,
-      subscriptionStatus: existing?.subscriptionStatus || "trial",
-      subscriptionTier: existing?.subscriptionTier || null,
-      subscriptionExpiresAt: existing?.subscriptionExpiresAt || null,
-      isAdmin: existing?.isAdmin || false,
-      createdAt: existing?.createdAt || now,
+      subscriptionStatus: userData.subscriptionStatus || "free",
+      subscriptionTier: userData.subscriptionTier || null,
+      subscriptionExpiresAt: userData.subscriptionExpiresAt || null,
+      isAdmin: userData.isAdmin || false,
+      createdAt: now,
       updatedAt: now,
     };
     

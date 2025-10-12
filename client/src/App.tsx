@@ -11,6 +11,7 @@ import Blog from "@/pages/blog";
 import BlogArticle from "@/pages/blog-article";
 import Pricing from "@/pages/pricing";
 import AdminDashboard from "@/pages/admin";
+import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/blog" component={Blog} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/admin" component={AdminDashboard} />
+        <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>
     </>

@@ -14,14 +14,16 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for Replit Auth
+// User storage table for username/password authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username").unique().notNull(),
+  password: varchar("password").notNull(), // Hashed password
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  subscriptionStatus: varchar("subscription_status").notNull().default("trial"), // trial, paid, cancelled
+  subscriptionStatus: varchar("subscription_status").notNull().default("free"), // free, one_time, monthly, annual
   subscriptionTier: varchar("subscription_tier"), // starter, professional, enterprise
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   isAdmin: boolean("is_admin").notNull().default(false), // Admin access flag
@@ -29,8 +31,13 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export const integrationProjects = pgTable("integration_projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

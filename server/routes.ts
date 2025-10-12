@@ -7,7 +7,7 @@ import { storage } from "./storage";
 import { FileProcessor } from "./services/fileProcessor";
 import { AIMappingService } from "./services/aiMapping";
 import { XSLTValidatorService } from "./services/xsltValidator";
-import { setupAuth, isAuthenticated, requirePaidSubscription, requireAdmin } from "./replitAuth";
+import { setupAuth, isAuthenticated, requirePaidSubscription, requireAdmin } from "./auth";
 import { 
   insertIntegrationProjectSchema,
   fileUploadSchema,
