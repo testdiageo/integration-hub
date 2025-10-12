@@ -1,0 +1,9 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"VKORG","CODDIV","auto","90%","{""typeConversion"":"""",""formatChange"":""""}"
+"KSCHL","CODLIST","auto","90%","{""typeConversion"":"""",""formatChange"":""""}"
+"MATNR","CODART","suggested","88%","{""typeConversion"":""number_to_string"",""formatChange"":""Add zeroes to the left to reach 15 digits""}"
+"DATAB","DTEFROMDETAIL","suggested","80%","{""typeConversion"":""number_to_string"",""formatChange"":""""}"
+"DATBI","DTETODETAIL","suggested","80%","{""typeConversion"":""number_to_string"",""formatChange"":""""}"
+"KMEIN","UMPRZ","auto","90%","{""typeConversion"":"""",""formatChange"":""""}"
+"KBETR","PRZVALPVP","suggested","80%","{""typeConversion"":""number_to_string"",""formatChange"":""""}"
+"VTWEG","DISTR_CHAN","auto","90%","{""typeConversion"":"""",""formatChange"":""""}"

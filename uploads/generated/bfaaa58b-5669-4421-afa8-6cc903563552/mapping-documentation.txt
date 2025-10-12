@@ -1,0 +1,59 @@
+# Field Mapping Documentation
+
+## Project Overview
+Generated on: 2025-10-01T09:24:30.672Z
+
+## Source System
+File: ListPrice - AS-IS.xml
+Type: xml
+Records: ~1
+
+## Target System  
+File: ListPrice - TO-BE.csv
+Type: csv
+Records: ~1
+
+## Field Mappings
+
+
+### 1. Source Field → CODDIV
+- **Mapping Type**: suggested
+- **Confidence**: 10%
+- **Transformation**: None
+
+
+### 2. Target Field → CODLIST
+- **Mapping Type**: suggested
+- **Confidence**: 10%
+- **Transformation**: None
+
+
+### 3. Mapping Type → Unmapped
+- **Mapping Type**: unmapped
+- **Confidence**: 10%
+- **Transformation**: None
+
+
+### 4. Confidence → Unmapped
+- **Mapping Type**: unmapped
+- **Confidence**: 10%
+- **Transformation**: None
+
+
+### 5. Transformation → Unmapped
+- **Mapping Type**: unmapped
+- **Confidence**: 10%
+- **Transformation**: None
+
+
+## Summary
+- Total mappings: 5
+- Auto-mapped: 0
+- Suggested: 2
+- Manual: 0
+- Unmapped: 3
+
+## Usage Instructions
+1. Apply the generated XSLT transformation to your source XML data
+2. Validate the output against your target schema
+3. Adjust mappings as needed for your specific use case

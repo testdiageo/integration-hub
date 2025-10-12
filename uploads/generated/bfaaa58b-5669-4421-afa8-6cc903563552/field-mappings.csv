@@ -1,0 +1,6 @@
+Source Field,Target Field,Mapping Type,Confidence,Transformation
+"Source Field","CODDIV","suggested","10%",""
+"Target Field","CODLIST","suggested","10%",""
+"Mapping Type","","unmapped","10%",""
+"Confidence","","unmapped","10%",""
+"Transformation","","unmapped","10%",""
