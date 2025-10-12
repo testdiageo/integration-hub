@@ -2,7 +2,7 @@ import { SEOHead } from "@/components/seo-head";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, ArrowRight, TrendingUp } from "lucide-react";
+import { Calendar, Clock, ArrowRight, TrendingUp, Home } from "lucide-react";
 import { Link } from "wouter";
 
 const blogPosts = [
@@ -85,6 +85,14 @@ export default function Blog() {
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-6">
+              <Button variant="ghost" asChild data-testid="button-return-home">
+                <Link href="/">
+                  <Home className="mr-2 h-4 w-4" />
+                  Return to Home
+                </Link>
+              </Button>
+            </div>
             <div className="text-center max-w-3xl mx-auto">
               <h1 className="text-4xl md:text-5xl font-bold mb-4" data-testid="heading-blog">
                 Integration Insights & Best Practices

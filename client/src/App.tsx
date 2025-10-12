@@ -8,6 +8,7 @@ import { Navigation } from "@/components/navigation";
 import Home from "@/pages/home";
 import IntegrationHub from "@/pages/integration-hub";
 import Blog from "@/pages/blog";
+import BlogArticle from "@/pages/blog-article";
 import Pricing from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
 
@@ -18,6 +19,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/hub" component={IntegrationHub} />
+        <Route path="/blog/:id" component={BlogArticle} />
         <Route path="/blog" component={Blog} />
         <Route path="/pricing" component={Pricing} />
         <Route component={NotFound} />
