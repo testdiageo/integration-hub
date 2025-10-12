@@ -7,17 +7,6 @@ import { Link } from "wouter";
 
 const blogPosts = [
   {
-    id: 1,
-    title: "10 Best Practices for Data Integration in 2025",
-    excerpt: "Learn the essential strategies for building robust and scalable data integration pipelines that stand the test of time.",
-    author: "Sarah Chen",
-    date: "2025-01-15",
-    readTime: "8 min read",
-    category: "Best Practices",
-    image: "/api/placeholder/400/250",
-    featured: true,
-  },
-  {
     id: 2,
     title: "XSLT vs DataWeave: Choosing the Right Transformation Language",
     excerpt: "A comprehensive comparison of XSLT and DataWeave transformation languages to help you make the right choice for your project.",
@@ -25,6 +14,27 @@ const blogPosts = [
     date: "2025-01-10",
     readTime: "12 min read",
     category: "Technical Deep Dive",
+    image: "/api/placeholder/400/250",
+    featured: true,
+  },
+  {
+    id: 4,
+    title: "Building ETL Pipelines: A Complete Guide",
+    excerpt: "Everything you need to know about Extract, Transform, Load processes and how to implement them effectively.",
+    author: "David Kim",
+    date: "2024-12-28",
+    readTime: "15 min read",
+    category: "Tutorial",
+    image: "/api/placeholder/400/250",
+  },
+  {
+    id: 1,
+    title: "10 Best Practices for Data Integration in 2025",
+    excerpt: "Learn the essential strategies for building robust and scalable data integration pipelines that stand the test of time.",
+    author: "Sarah Chen",
+    date: "2025-01-15",
+    readTime: "8 min read",
+    category: "Best Practices",
     image: "/api/placeholder/400/250",
   },
   {
@@ -35,16 +45,6 @@ const blogPosts = [
     date: "2025-01-05",
     readTime: "6 min read",
     category: "AI & Innovation",
-    image: "/api/placeholder/400/250",
-  },
-  {
-    id: 4,
-    title: "Building ETL Pipelines: A Complete Guide",
-    excerpt: "Everything you need to know about Extract, Transform, Load processes and how to implement them effectively.",
-    author: "David Kim",
-    date: "2024-12-28",
-    readTime: "15 min read",
-    category: "Tutorial",
     image: "/api/placeholder/400/250",
   },
   {
