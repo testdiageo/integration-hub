@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import { FileProcessor } from "./services/fileProcessor";
 import { AIMappingService } from "./services/aiMapping";
 import { XSLTValidatorService } from "./services/xsltValidator";
+import { setupAuth, isAuthenticated, requirePaidSubscription } from "./replitAuth";
 import { 
   insertIntegrationProjectSchema,
   fileUploadSchema,
@@ -236,14 +237,43 @@ ${mappings.map((m, index) => `
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Update user subscription (for testing - in production this would be handled by Stripe webhook)
+  app.post('/api/auth/subscribe', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { tier } = req.body; // starter, professional, enterprise
+      const user = await storage.updateUserSubscription(userId, "paid", tier);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      res.status(500).json({ message: "Failed to update subscription" });
+    }
+  });
+
   // Serve uploaded files statically
   app.use('/uploads', express.static(path.resolve('uploads')));
   
-  // Create new integration project
-  app.post("/api/projects", async (req, res) => {
+  // Create new integration project (requires login and paid subscription)
+  app.post("/api/projects", isAuthenticated, requirePaidSubscription, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const validatedData = insertIntegrationProjectSchema.parse(req.body);
-      const project = await storage.createProject(validatedData);
+      const project = await storage.createProject({ ...validatedData, userId });
       res.json(project);
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : 'Unknown error' });

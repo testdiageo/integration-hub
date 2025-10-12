@@ -4,11 +4,18 @@ import {
   type UploadedFile,
   type InsertUploadedFile,
   type FieldMapping,
-  type InsertFieldMapping
+  type InsertFieldMapping,
+  type User,
+  type UpsertUser
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
+  // User operations (required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  updateUserSubscription(id: string, subscriptionStatus: string, subscriptionTier?: string): Promise<User>;
+
   // Integration Projects
   createProject(project: InsertIntegrationProject): Promise<IntegrationProject>;
   getProject(id: string): Promise<IntegrationProject | undefined>;
@@ -30,14 +37,59 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private users: Map<string, User>;
   private projects: Map<string, IntegrationProject>;
   private files: Map<string, UploadedFile>;
   private mappings: Map<string, FieldMapping>;
 
   constructor() {
+    this.users = new Map();
     this.projects = new Map();
     this.files = new Map();
     this.mappings = new Map();
+  }
+
+  // User operations (required for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const existing = this.users.get(userData.id!);
+    const now = new Date();
+    
+    const user: User = {
+      id: userData.id!,
+      email: userData.email || null,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      profileImageUrl: userData.profileImageUrl || null,
+      subscriptionStatus: existing?.subscriptionStatus || "trial",
+      subscriptionTier: existing?.subscriptionTier || null,
+      subscriptionExpiresAt: existing?.subscriptionExpiresAt || null,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+    };
+    
+    this.users.set(user.id, user);
+    return user;
+  }
+
+  async updateUserSubscription(id: string, subscriptionStatus: string, subscriptionTier?: string): Promise<User> {
+    const existing = this.users.get(id);
+    if (!existing) {
+      throw new Error("User not found");
+    }
+    
+    const updated: User = {
+      ...existing,
+      subscriptionStatus,
+      subscriptionTier: subscriptionTier || existing.subscriptionTier,
+      updatedAt: new Date(),
+    };
+    
+    this.users.set(id, updated);
+    return updated;
   }
 
   // Integration Projects
@@ -46,6 +98,7 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const project: IntegrationProject = { 
       ...insertProject,
+      userId: insertProject.userId || null,
       description: insertProject.description || null,
       status: insertProject.status || "draft",
       sourceSchema: insertProject.sourceSchema || null,
@@ -53,6 +106,7 @@ export class MemStorage implements IStorage {
       fieldMappings: insertProject.fieldMappings || null,
       transformationLogic: insertProject.transformationLogic || null,
       integrationCode: insertProject.integrationCode || null,
+      xsltValidation: insertProject.xsltValidation || null,
       id,
       createdAt: now,
       updatedAt: now,

@@ -2,14 +2,17 @@ import { SEOHead } from "@/components/seo-head";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useSubscription } from "@/contexts/subscription-context";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Sparkles, Zap, Crown } from "lucide-react";
 import { Link } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 const pricingPlans = [
   {
     name: "Starter",
+    tier: "starter",
     description: "Perfect for trying out IntegrationHub",
     price: "49",
     period: "one-time",
@@ -29,6 +32,7 @@ const pricingPlans = [
   },
   {
     name: "Professional",
+    tier: "professional",
     description: "For teams building integrations at scale",
     price: "999",
     period: "one-time",
@@ -50,6 +54,7 @@ const pricingPlans = [
   },
   {
     name: "Enterprise",
+    tier: "enterprise",
     description: "For large organizations with custom needs",
     price: "1999",
     period: "one-time",
@@ -96,23 +101,39 @@ const faqs = [
 ];
 
 export default function Pricing() {
-  const { isTrial, isPaid, setSubscriptionStatus } = useSubscription();
+  const { user, isLoading, isAuthenticated, isPaidUser } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleActivatePlan = (planName: string) => {
-    setSubscriptionStatus("paid");
-    toast({
-      title: "✅ Plan Activated!",
-      description: `${planName} plan is now active. All features unlocked!`,
-    });
-  };
+  const subscribeMutation = useMutation({
+    mutationFn: async (tier: string) => {
+      return await apiRequest("/api/auth/subscribe", "POST", { tier });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "✅ Subscription Activated!",
+        description: "Your subscription is now active. All features unlocked!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to activate subscription",
+        variant: "destructive",
+      });
+    },
+  });
 
-  const handleStartTrial = () => {
-    setSubscriptionStatus("trial");
-    toast({
-      title: "Free Trial Started",
-      description: "You're now on a free trial with limited features.",
-    });
+  const handleSelectPlan = (tier: string, planName: string) => {
+    if (!isAuthenticated) {
+      // Redirect to login
+      window.location.href = "/api/login";
+      return;
+    }
+    
+    // For demo/testing - subscribe user immediately
+    subscribeMutation.mutate(tier);
   };
 
   return (
@@ -197,10 +218,11 @@ export default function Pricing() {
                             className="w-full"
                             variant="secondary"
                             size="sm"
-                            onClick={() => handleActivatePlan(plan.name)}
+                            onClick={() => handleSelectPlan(plan.tier, plan.name)}
+                            disabled={subscribeMutation.isPending}
                             data-testid={`button-activate-${plan.name.toLowerCase()}`}
                           >
-                            {isPaid ? "✓ Plan Active" : `Activate ${plan.name}`}
+                            {isPaidUser ? "✓ Plan Active" : isAuthenticated ? `Activate ${plan.name}` : "Log In to Subscribe"}
                           </Button>
                         )}
                       </div>
@@ -255,17 +277,14 @@ export default function Pricing() {
                   <div>
                     <h3 className="font-semibold text-lg">Current Status</h3>
                     <p className="text-muted-foreground text-sm">
-                      {isPaid ? "You have full access to all features" : "You're on a free trial with limited features"}
+                      {!isAuthenticated ? "Please log in to access features" : isPaidUser ? "You have full access to all features" : "You're on a free trial with limited features"}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant={isPaid ? "default" : "secondary"} className="text-sm">
-                      {isPaid ? "Pro User" : "Free Trial"}
-                    </Badge>
-                    {isPaid && (
-                      <Button variant="outline" size="sm" onClick={handleStartTrial} data-testid="button-switch-to-trial">
-                        Switch to Trial (Demo)
-                      </Button>
+                    {isAuthenticated && (
+                      <Badge variant={isPaidUser ? "default" : "secondary"} className="text-sm">
+                        {isPaidUser ? "Paid User" : "Trial User"}
+                      </Badge>
                     )}
                   </div>
                 </div>
