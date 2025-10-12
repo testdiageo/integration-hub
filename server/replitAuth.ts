@@ -101,15 +101,25 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
+  // Helper function to get the correct strategy name
+  const getStrategyName = (hostname: string) => {
+    // For localhost or internal access, use the first domain from REPLIT_DOMAINS
+    if (hostname === 'localhost' || hostname.includes('127.0.0.1')) {
+      const firstDomain = process.env.REPLIT_DOMAINS!.split(",")[0];
+      return `replitauth:${firstDomain}`;
+    }
+    return `replitauth:${hostname}`;
+  };
+
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(getStrategyName(req.hostname), {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(getStrategyName(req.hostname), {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
