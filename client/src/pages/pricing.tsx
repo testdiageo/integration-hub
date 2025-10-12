@@ -4,16 +4,36 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { Check, Gift, Zap, TrendingUp, Crown } from "lucide-react";
 import { Link } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 const pricingPlans = [
   {
-    name: "Starter",
-    tier: "starter",
-    description: "Perfect for trying out IntegrationHub",
+    name: "Free",
+    tier: "free",
+    description: "Try IntegrationHub with limited features",
+    price: "0",
+    period: "forever",
+    icon: Gift,
+    badge: null,
+    features: [
+      "3 Integration projects",
+      "AI-powered field mapping",
+      "XSLT & DataWeave generation",
+      "Basic validation (5 rows preview)",
+      "CSV, JSON, XML support",
+      "Community support",
+      "14-day project retention",
+    ],
+    cta: "Get Started Free",
+    highlighted: false,
+  },
+  {
+    name: "One-Time",
+    tier: "one-time",
+    description: "Perfect for a single integration project",
     price: "49",
     period: "one-time",
     icon: Zap,
@@ -22,57 +42,59 @@ const pricingPlans = [
       "10 Integration projects",
       "AI-powered field mapping",
       "XSLT & DataWeave generation",
-      "Basic validation & testing",
-      "CSV, JSON, XML support",
+      "Standard validation (50 rows preview)",
+      "All file formats supported",
       "Email support",
-      "30-day access",
+      "60-day project retention",
+      "Download transformation code",
     ],
-    cta: "Get Started",
+    cta: "Purchase Once",
     highlighted: false,
   },
   {
-    name: "Professional",
-    tier: "professional",
-    description: "For teams building integrations at scale",
-    price: "999",
-    period: "one-time",
-    icon: Sparkles,
+    name: "Monthly",
+    tier: "monthly",
+    description: "For ongoing integration development",
+    price: "99",
+    period: "month",
+    icon: TrendingUp,
     badge: "Most Popular",
     features: [
       "Unlimited integration projects",
       "Advanced AI field mapping",
       "XSLT & DataWeave generation",
-      "Advanced validation & testing",
+      "Advanced validation (unlimited preview)",
       "All file formats supported",
-      "Priority email & chat support",
-      "Custom transformation templates",
+      "Priority email support",
+      "Unlimited project retention",
       "Team collaboration (up to 5 users)",
       "API access",
+      "Custom transformation templates",
     ],
-    cta: "Start Free Trial",
+    cta: "Start Monthly",
     highlighted: true,
   },
   {
-    name: "Enterprise",
-    tier: "enterprise",
-    description: "For large organizations with custom needs",
-    price: "1999",
-    period: "one-time",
+    name: "Annual",
+    tier: "annual",
+    description: "Best value for serious integration teams",
+    price: "999",
+    period: "year",
     icon: Crown,
     badge: "Best Value",
     features: [
-      "Everything in Professional",
+      "Everything in Monthly",
+      "2 months free (save $189)",
       "Unlimited team members",
       "Dedicated account manager",
       "Custom AI model training",
-      "On-premise deployment option",
-      "24/7 phone support",
+      "24/7 priority support",
       "SLA guarantee",
-      "Custom integrations",
       "Advanced security & compliance",
       "Training & onboarding",
+      "Custom integrations",
     ],
-    cta: "Contact Sales",
+    cta: "Subscribe Annually",
     highlighted: false,
   },
 ];
@@ -80,23 +102,23 @@ const pricingPlans = [
 const faqs = [
   {
     question: "Can I switch plans later?",
-    answer: "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately for upgrades and at the end of your billing cycle for downgrades.",
+    answer: "Yes! Free users can upgrade to any paid plan anytime. Paid users can switch between monthly and annual subscriptions. Changes take effect immediately.",
   },
   {
     question: "What payment methods do you accept?",
-    answer: "We accept all major credit cards (Visa, MasterCard, American Express) and offer invoice billing for annual Enterprise plans.",
+    answer: "We accept all major credit cards (Visa, MasterCard, American Express) via Stripe. Annual plans also support invoice billing.",
   },
   {
-    question: "Is there a free trial?",
-    answer: "Yes! Professional plan users get a 14-day free trial with full access to all features. No credit card required to start.",
+    question: "What's included in the Free plan?",
+    answer: "The Free plan includes 3 integration projects with AI-powered field mapping and code generation. You can preview up to 5 rows of transformed data and export your transformation code.",
   },
   {
-    question: "What happens after the one-time Starter plan expires?",
-    answer: "After 30 days, you can upgrade to a monthly or annual plan to continue using IntegrationHub, or purchase another Starter plan for additional projects.",
+    question: "What happens after a one-time purchase expires?",
+    answer: "One-time purchases give you 60 days of access. After that, your projects are archived but you can upgrade to monthly/annual to restore access or purchase another one-time plan.",
   },
   {
     question: "Do you offer refunds?",
-    answer: "Yes, we offer a 30-day money-back guarantee for monthly and annual plans. One-time purchases are non-refundable after project creation.",
+    answer: "Yes, we offer a 30-day money-back guarantee for monthly and annual subscriptions. One-time purchases are non-refundable after you create your first project.",
   },
 ];
 
@@ -127,20 +149,29 @@ export default function Pricing() {
 
   const handleSelectPlan = (tier: string, planName: string) => {
     if (!isAuthenticated) {
-      // Redirect to login
-      window.location.href = "/api/login";
+      window.location.href = "/auth";
       return;
     }
     
-    // For demo/testing - subscribe user immediately
     subscribeMutation.mutate(tier);
+  };
+
+  const getCurrentPlanName = () => {
+    if (!user?.subscriptionStatus) return "Free";
+    const statusMap: Record<string, string> = {
+      free: "Free",
+      "one-time": "One-Time",
+      monthly: "Monthly",
+      annual: "Annual",
+    };
+    return statusMap[user.subscriptionStatus] || "Free";
   };
 
   return (
     <>
       <SEOHead
         title="Pricing Plans - IntegrationHub | Flexible Options for Every Team"
-        description="Choose the perfect IntegrationHub plan for your needs. One-time, monthly, or annual subscriptions with AI-powered field mapping, XSLT & DataWeave generation. Start free trial today."
+        description="Choose the perfect IntegrationHub plan for your needs. Free forever plan, one-time purchase, or monthly/annual subscriptions with AI-powered field mapping and code generation."
         keywords="integration pricing, data transformation pricing, XSLT tool pricing, API integration cost, field mapping subscription"
         canonicalUrl={`${window.location.origin}/pricing`}
       />
@@ -154,7 +185,7 @@ export default function Pricing() {
                 Simple, Transparent Pricing
               </h1>
               <p className="text-xl text-muted-foreground" data-testid="text-pricing-description">
-                Choose the plan that fits your needs. All plans include our core AI-powered integration features.
+                Start free, upgrade when you need more. All plans include our core AI-powered integration features.
               </p>
             </div>
           </div>
@@ -163,15 +194,16 @@ export default function Pricing() {
         {/* Pricing Cards */}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {pricingPlans.map((plan, idx) => {
                 const Icon = plan.icon;
+                const isCurrentPlan = user?.subscriptionStatus === plan.tier;
                 return (
                   <Card
                     key={idx}
                     className={`relative overflow-hidden ${
-                      plan.highlighted ? "border-primary shadow-xl scale-105" : ""
-                    }`}
+                      plan.highlighted ? "border-primary shadow-xl md:scale-105" : ""
+                    } ${isCurrentPlan ? "ring-2 ring-primary" : ""}`}
                     data-testid={`card-pricing-${plan.name.toLowerCase()}`}
                   >
                     {plan.badge && (
@@ -204,26 +236,41 @@ export default function Pricing() {
 
                     <CardContent>
                       <div className="space-y-2 mb-6">
-                        <Button
-                          className="w-full"
-                          variant={plan.highlighted ? "default" : "outline"}
-                          size="lg"
-                          asChild
-                          data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                        >
-                          <Link href="/hub">{plan.cta}</Link>
-                        </Button>
-                        {plan.name !== "Starter" && (
+                        {isCurrentPlan ? (
                           <Button
                             className="w-full"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleSelectPlan(plan.tier, plan.name)}
-                            disabled={subscribeMutation.isPending}
-                            data-testid={`button-activate-${plan.name.toLowerCase()}`}
+                            variant="default"
+                            size="lg"
+                            disabled
+                            data-testid={`button-current-${plan.name.toLowerCase()}`}
                           >
-                            {isPaidUser ? "✓ Plan Active" : isAuthenticated ? `Activate ${plan.name}` : "Log In to Subscribe"}
+                            ✓ Current Plan
                           </Button>
+                        ) : (
+                          <>
+                            {plan.tier === "free" ? (
+                              <Button
+                                className="w-full"
+                                variant="outline"
+                                size="lg"
+                                asChild
+                                data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                              >
+                                <Link href={isAuthenticated ? "/hub" : "/auth"}>{plan.cta}</Link>
+                              </Button>
+                            ) : (
+                              <Button
+                                className="w-full"
+                                variant={plan.highlighted ? "default" : "outline"}
+                                size="lg"
+                                onClick={() => handleSelectPlan(plan.tier, plan.name)}
+                                disabled={subscribeMutation.isPending}
+                                data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                              >
+                                {isAuthenticated ? plan.cta : "Log In to Subscribe"}
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
 
@@ -269,29 +316,33 @@ export default function Pricing() {
         </section>
 
         {/* Subscription Status */}
-        <section className="py-8 bg-muted/20">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Card>
-              <CardContent className="py-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">Current Status</h3>
-                    <p className="text-muted-foreground text-sm">
-                      {!isAuthenticated ? "Please log in to access features" : isPaidUser ? "You have full access to all features" : "You're on a free trial with limited features"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {isAuthenticated && (
-                      <Badge variant={isPaidUser ? "default" : "secondary"} className="text-sm">
-                        {isPaidUser ? "Paid User" : "Trial User"}
+        {isAuthenticated && (
+          <section className="py-8 bg-muted/20">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              <Card>
+                <CardContent className="py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg" data-testid="text-current-status">Current Status</h3>
+                      <p className="text-muted-foreground text-sm" data-testid="text-status-description">
+                        You're on the {getCurrentPlanName()} plan
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge 
+                        variant={user?.subscriptionStatus === "free" ? "secondary" : "default"} 
+                        className="text-sm"
+                        data-testid="badge-current-plan"
+                      >
+                        {getCurrentPlanName()}
                       </Badge>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        )}
 
         {/* CTA Section */}
         <section className="py-16">
