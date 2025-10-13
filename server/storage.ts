@@ -20,6 +20,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserSubscription(id: string, subscriptionStatus: string, subscriptionTier?: string): Promise<User>;
+  updateUserDownloads(id: string, downloadsUsed: number, downloadsResetAt: Date): Promise<User>;
   
   // Admin user operations
   getAllUsers(): Promise<User[]>;
@@ -89,6 +90,8 @@ export class MemStorage implements IStorage {
       subscriptionStatus: userData.subscriptionStatus || "free",
       subscriptionTier: userData.subscriptionTier || null,
       subscriptionExpiresAt: userData.subscriptionExpiresAt || null,
+      downloadsUsed: 0,
+      downloadsResetAt: null,
       isAdmin: userData.isAdmin || false,
       createdAt: now,
       updatedAt: now,
@@ -108,6 +111,23 @@ export class MemStorage implements IStorage {
       ...existing,
       subscriptionStatus,
       subscriptionTier: subscriptionTier || existing.subscriptionTier,
+      updatedAt: new Date(),
+    };
+    
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  async updateUserDownloads(id: string, downloadsUsed: number, downloadsResetAt: Date): Promise<User> {
+    const existing = this.users.get(id);
+    if (!existing) {
+      throw new Error("User not found");
+    }
+    
+    const updated: User = {
+      ...existing,
+      downloadsUsed,
+      downloadsResetAt,
       updatedAt: new Date(),
     };
     

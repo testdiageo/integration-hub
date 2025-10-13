@@ -75,7 +75,7 @@ export default function Blog() {
   return (
     <>
       <SEOHead
-        title="IntegrationHub Blog - Data Integration Insights & Best Practices"
+        title="Connetly Blog - Data Integration Insights & Best Practices"
         description="Expert insights on data integration, XSLT, DataWeave, AI-powered field mapping, and best practices for building scalable integration pipelines."
         keywords="data integration blog, XSLT tutorial, DataWeave guide, API integration, ETL best practices, field mapping"
         canonicalUrl={`${window.location.origin}/blog`}

@@ -72,7 +72,7 @@ export function useAuth(): AuthHook {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Account created!",
-        description: `Welcome to IntegrationHub, ${user.username}!`,
+        description: `Welcome to Connetly, ${user.username}!`,
       });
     },
     onError: (error: Error) => {

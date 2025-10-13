@@ -94,8 +94,8 @@ export default function AdminDashboard() {
   return (
     <>
       <SEOHead
-        title="Admin Dashboard - IntegrationHub"
-        description="Manage users and subscriptions for IntegrationHub"
+        title="Admin Dashboard - Connetly"
+        description="Manage users and subscriptions for Connetly"
         canonicalUrl={`${window.location.origin}/admin`}
       />
 

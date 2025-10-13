@@ -1,8 +1,8 @@
-# IntegrationHub 🔄
+# Connetly 🔄
 
 > AI-Powered Data Integration & Transformation Platform
 
-IntegrationHub is a full-stack SaaS web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. Upload your source and target files, get smart field mapping suggestions, and generate production-ready XSLT and DataWeave transformation code.
+Connetly is a full-stack SaaS web application that provides intelligent data integration capabilities through automated field mapping and transformation logic generation. Upload your source and target files, get smart field mapping suggestions, and generate production-ready XSLT and DataWeave transformation code.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-green.svg)
@@ -40,8 +40,8 @@ IntegrationHub is a full-stack SaaS web application that provides intelligent da
 
 ```bash
 # Clone the repository
-git clone https://github.com/testdiageo/integration-hub.git
-cd integration-hub
+git clone https://github.com/testdiageo/connetly.git
+cd connetly
 
 # Install dependencies
 npm install
@@ -95,7 +95,7 @@ npm run start
 ## 📊 Project Structure
 
 ```
-integration-hub/
+connetly/
 ├── client/                 # Frontend React application
 │   ├── src/
 │   │   ├── components/    # Reusable UI components
@@ -210,9 +210,9 @@ This project is licensed under the MIT License.
 ## 📧 Support
 
 - Documentation: [docs link]
-- Issues: [GitHub Issues](https://github.com/[your-username]/integration-hub/issues)
+- Issues: [GitHub Issues](https://github.com/[your-username]/connetly/issues)
 - Email: support@integrationhub.com
 
 ---
 
-Built with ❤️ by the IntegrationHub team
+Built with ❤️ by the Connetly team

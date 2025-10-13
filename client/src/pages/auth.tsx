@@ -49,8 +49,8 @@ export default function AuthPage() {
   return (
     <>
       <SEOHead
-        title="Sign In - IntegrationHub"
-        description="Sign in to IntegrationHub to access intelligent data integration features"
+        title="Sign In - Connetly"
+        description="Sign in to Connetly to access intelligent data integration features"
         canonicalUrl={`${window.location.origin}/auth`}
       />
 
@@ -64,7 +64,7 @@ export default function AuthPage() {
                   <ArrowRightLeft className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  IntegrationHub
+                  Connetly
                 </span>
               </div>
               <CardTitle>Welcome</CardTitle>

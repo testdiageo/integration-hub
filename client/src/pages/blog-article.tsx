@@ -348,7 +348,7 @@ export default function BlogArticle() {
   return (
     <>
       <SEOHead
-        title={`${article.title} - IntegrationHub Blog`}
+        title={`${article.title} - Connetly Blog`}
         description={article.content.substring(0, 155)}
         keywords="XSLT, DataWeave, transformation language, data integration, MuleSoft, XML transformation"
         canonicalUrl={`${window.location.origin}/blog/${articleId}`}
@@ -460,7 +460,7 @@ export default function BlogArticle() {
             </Button>
             <Button asChild data-testid="button-footer-hub">
               <Link href="/hub">
-                Try IntegrationHub
+                Try Connetly
               </Link>
             </Button>
           </div>

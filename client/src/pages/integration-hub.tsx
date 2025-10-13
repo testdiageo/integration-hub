@@ -24,7 +24,7 @@ const steps = [
   { number: 6, label: "Success & Download" },
 ];
 
-export default function IntegrationHub() {
+export default function Connetly() {
   const [currentStep, setCurrentStep] = useState(1);
   const [currentProject, setCurrentProject] = useState<IntegrationProject | null>(null);
   const [hasInitializedStep, setHasInitializedStep] = useState(false);
@@ -240,7 +240,7 @@ export default function IntegrationHub() {
   return (
     <>
       <SEOHead
-        title="Integration Workflow - IntegrationHub | AI-Powered Data Transformation"
+        title="Integration Workflow - Connetly | AI-Powered Data Transformation"
         description="Create intelligent data integrations with AI-powered field mapping. Upload files, generate transformations, and download production-ready XSLT or DataWeave code."
         keywords="data integration workflow, field mapping tool, XSLT generator, DataWeave creator, transformation workflow"
         canonicalUrl={`${window.location.origin}/hub`}

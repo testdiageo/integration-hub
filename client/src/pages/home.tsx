@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <>
       <SEOHead
-        title="IntegrationHub - AI-Powered Data Integration & Transformation Platform"
+        title="Connetly - AI-Powered Data Integration & Transformation Platform"
         description="Transform your data integration workflow with AI-powered field mapping, automated XSLT and DataWeave generation, and intelligent transformation logic. Support for CSV, JSON, XML, and Excel formats."
         keywords="data integration, AI field mapping, XSLT generation, DataWeave transformation, API integration, data transformation, ETL tool, integration platform"
         canonicalUrl={window.location.origin}
@@ -179,7 +179,7 @@ export default function Home() {
                   Ready to Transform Your Integration Workflow?
                 </h2>
                 <p className="text-xl opacity-90 mb-8" data-testid="text-cta-description">
-                  Join thousands of developers who trust IntegrationHub for their data transformation needs
+                  Join thousands of developers who trust Connetly for their data transformation needs
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" variant="secondary" asChild className="text-lg px-8" data-testid="button-cta-start">

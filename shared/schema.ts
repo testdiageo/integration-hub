@@ -26,6 +26,8 @@ export const users = pgTable("users", {
   subscriptionStatus: varchar("subscription_status").notNull().default("free"), // free, one_time, monthly, annual
   subscriptionTier: varchar("subscription_tier"), // starter, professional, enterprise
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  downloadsUsed: integer("downloads_used").notNull().default(0), // Track number of downloads used
+  downloadsResetAt: timestamp("downloads_reset_at"), // When to reset download counter
   isAdmin: boolean("is_admin").notNull().default(false), // Admin access flag
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
