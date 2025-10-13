@@ -211,7 +211,7 @@ export default function Connetly() {
               Please log in to access the Integration Hub and create data transformation projects.
             </p>
             <Button className="w-full" asChild data-testid="button-login-required">
-              <a href="/api/login">
+              <a href="/auth">
                 <LogIn className="mr-2 h-4 w-4" />
                 Log In to Continue
               </a>

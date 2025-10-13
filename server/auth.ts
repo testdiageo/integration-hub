@@ -82,9 +82,28 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      console.log("[REGISTER] Starting registration for username:", req.body.username);
+      
+      // Validate required fields
+      if (!req.body.username || !req.body.password) {
+        console.log("[REGISTER] Missing required fields");
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      // Check for existing user
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
+        console.log("[REGISTER] Username already exists:", req.body.username);
         return res.status(400).json({ message: "Username already exists" });
+      }
+
+      // Check for existing email if provided
+      if (req.body.email) {
+        const existingEmail = await storage.getUserByEmail?.(req.body.email);
+        if (existingEmail) {
+          console.log("[REGISTER] Email already exists:", req.body.email);
+          return res.status(400).json({ message: "Email already exists" });
+        }
       }
 
       // Whitelist only safe fields - prevent privilege escalation
@@ -99,24 +118,61 @@ export function setupAuth(app: Express) {
         isAdmin: false,
       };
 
+      console.log("[REGISTER] Creating user in database...");
       const user = await storage.createUser(safeUserData as any);
+      console.log("[REGISTER] User created successfully with ID:", user.id);
 
       // Don't send password back to client
       const { password, ...userWithoutPassword } = user;
 
+      // Log the user in immediately after registration
+      console.log("[REGISTER] Logging user in...");
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error("[REGISTER] Login after registration failed:", err);
+          return res.status(500).json({ 
+            message: "Account created but login failed. Please try logging in manually.",
+            userId: user.id 
+          });
+        }
+        console.log("[REGISTER] Registration and login successful");
         res.status(201).json(userWithoutPassword);
       });
     } catch (err) {
-      next(err);
+      console.error("[REGISTER] Registration error:", err);
+      // Send detailed error message
+      res.status(500).json({ 
+        message: err instanceof Error ? err.message : "Registration failed. Please try again." 
+      });
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    // Remove password from response
-    const { password, ...userWithoutPassword } = req.user as SelectUser;
-    res.status(200).json(userWithoutPassword);
+  app.post("/api/login", (req, res, next) => {
+    console.log("[LOGIN] Attempting login for username:", req.body.username);
+    
+    passport.authenticate("local", (err: any, user: SelectUser | false, info: any) => {
+      if (err) {
+        console.error("[LOGIN] Authentication error:", err);
+        return res.status(500).json({ message: "Authentication error occurred" });
+      }
+      
+      if (!user) {
+        console.log("[LOGIN] Authentication failed for username:", req.body.username);
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      req.login(user, (err) => {
+        if (err) {
+          console.error("[LOGIN] Login session error:", err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        console.log("[LOGIN] Login successful for user ID:", user.id);
+        // Remove password from response
+        const { password, ...userWithoutPassword } = user;
+        res.status(200).json(userWithoutPassword);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
