@@ -558,6 +558,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate AI field mappings
   app.post("/api/projects/:id/generate-mappings", async (req, res) => {
+    // Set a longer timeout for this endpoint (150 seconds)
+    req.setTimeout(150000);
+    
+    console.log(`[ROUTE] Starting field mapping generation for project ${req.params.id}`);
+    
     try {
       const { projectId } = generateMappingSchema.parse({ projectId: req.params.id });
       
@@ -567,23 +572,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const targetFile = files.find(f => f.systemType === "target");
 
       if (!sourceFile || !targetFile) {
+        console.log('[ROUTE] Missing source or target file');
         return res.status(400).json({ 
           message: "Both source and target files are required" 
         });
       }
 
       if (!sourceFile.detectedSchema || !targetFile.detectedSchema) {
+        console.log('[ROUTE] Missing file schemas');
         return res.status(400).json({ 
           message: "File schemas could not be detected" 
         });
       }
 
-      // Generate AI mappings
+      console.log('[ROUTE] Calling AIMappingService.generateFieldMappings...');
+      
+      // Generate AI mappings with proper timeout handling
       const mappingAnalysis = await AIMappingService.generateFieldMappings(
         sourceFile.detectedSchema as any,
         targetFile.detectedSchema as any
       );
 
+      console.log('[ROUTE] AI mapping complete, saving to database...');
+      
       // Clear existing mappings
       await storage.deleteMappingsByProject(projectId);
 
@@ -611,13 +622,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
+      console.log('[ROUTE] Successfully saved mappings, returning response');
+
       res.json({
         analysis: mappingAnalysis,
         mappings: savedMappings,
       });
 
     } catch (error) {
-      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('[ROUTE] Error in generate-mappings:', error);
+      
+      // Send appropriate error response
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Check if response has already been sent
+      if (!res.headersSent) {
+        res.status(500).json({ message: errorMessage });
+      }
     }
   });
 

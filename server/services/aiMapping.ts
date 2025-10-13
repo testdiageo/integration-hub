@@ -13,7 +13,11 @@ function getOpenAIClient(): OpenAI {
     if (!apiKey) {
       throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.');
     }
-    openai = new OpenAI({ apiKey });
+    openai = new OpenAI({ 
+      apiKey,
+      timeout: 120000, // 120 seconds timeout
+      maxRetries: 2, // Retry up to 2 times on failure
+    });
   }
   return openai;
 }
@@ -45,9 +49,15 @@ export class AIMappingService {
     sourceSchema: DetectedSchema,
     targetSchema: DetectedSchema
   ): Promise<MappingAnalysis> {
+    console.log('[AI MAPPING] Starting field mapping generation...');
+    console.log(`[AI MAPPING] Source fields: ${sourceSchema.fields.length}, Target fields: ${targetSchema.fields.length}`);
+    
     try {
       const prompt = this.buildMappingPrompt(sourceSchema, targetSchema);
 
+      console.log('[AI MAPPING] Sending request to OpenAI GPT-4...');
+      const startTime = Date.now();
+      
       const response = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [
@@ -88,8 +98,12 @@ export class AIMappingService {
             content: prompt
           }
         ],
-
+        temperature: 0.3,
+        max_tokens: 4000,
       });
+      
+      const elapsed = Date.now() - startTime;
+      console.log(`[AI MAPPING] Received response from OpenAI in ${elapsed}ms`);
 
       // Clean up response content and extract JSON  
       let content = response.choices[0].message.content || '{}';
@@ -147,9 +161,26 @@ export class AIMappingService {
         }
       }
       
+      console.log('[AI MAPPING] Successfully processed mapping result');
       return this.processMappingResult(result);
 
     } catch (error) {
+      console.error('[AI MAPPING] Error during field mapping generation:', error);
+      
+      // Handle specific error types
+      if (error instanceof Error) {
+        if (error.message.includes('timeout') || error.message.includes('timed out')) {
+          throw new Error('AI mapping request timed out. The schemas might be too large or OpenAI API is experiencing delays. Please try again.');
+        }
+        if (error.message.includes('API key')) {
+          throw new Error('OpenAI API key is not configured or invalid. Please contact support.');
+        }
+        if (error.message.includes('rate limit')) {
+          throw new Error('OpenAI rate limit exceeded. Please try again in a few moments.');
+        }
+        throw new Error(`AI mapping failed: ${error.message}`);
+      }
+      
       throw new Error(`AI mapping failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
