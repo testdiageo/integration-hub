@@ -29,15 +29,17 @@ export default function Home() {
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 animate-pulse" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 relative">
-            <div className="text-center max-w-4xl mx-auto">
+            <div className="text-center max-w-4xl mx-auto" style={{ overflow: 'visible' }}>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in" data-testid="badge-ai-powered">
                 <Sparkles className="h-4 w-4" />
                 AI-Powered Integration Platform
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-up" data-testid="heading-hero">
-                Transform Data Integration with Intelligence
-              </h1>
+              <div className="py-2" style={{ overflow: 'visible' }}>
+                <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-up" data-testid="heading-hero" style={{ lineHeight: '1.3', paddingBottom: '0.1em' }}>
+                  Transform Data Integration with Intelligence
+                </h1>
+              </div>
               
               <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-fade-in-up animation-delay-200" data-testid="text-hero-description">
                 Upload your source and target files. Map fields, generate transformation logic, and create production-ready XSLT or DataWeave code in minutes.
