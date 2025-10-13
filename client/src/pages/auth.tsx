@@ -24,7 +24,15 @@ export default function AuthPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      setLocation("/");
+      // Check for return URL in query params
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnTo = urlParams.get('returnTo');
+      
+      if (returnTo) {
+        setLocation(returnTo);
+      } else {
+        setLocation("/");
+      }
     }
   }, [user, setLocation]);
 

@@ -131,12 +131,17 @@ export default function Pricing() {
     mutationFn: async (tier: string) => {
       return await apiRequest("/api/auth/subscribe", "POST", { tier });
     },
-    onSuccess: () => {
+    onSuccess: (updatedUser) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "✅ Subscription Activated!",
         description: "Your subscription is now active. All features unlocked!",
       });
+      
+      // Redirect to hub after successful subscription
+      setTimeout(() => {
+        window.location.href = "/hub";
+      }, 1500);
     },
     onError: (error: Error) => {
       toast({
@@ -148,9 +153,45 @@ export default function Pricing() {
   });
 
   const handleSelectPlan = (tier: string, planName: string) => {
+    // Check if user is logged in
     if (!isAuthenticated) {
-      window.location.href = "/auth";
+      // Store the intended plan in sessionStorage for post-login redirect
+      sessionStorage.setItem('intendedPlan', tier);
+      // Redirect to auth with return URL
+      window.location.href = "/auth?returnTo=/pricing";
       return;
+    }
+    
+    // Check if user already has this plan
+    if (user?.subscriptionStatus === tier) {
+      toast({
+        title: "Already Subscribed",
+        description: `You already have the ${planName} plan active.`,
+        variant: "default",
+      });
+      return;
+    }
+    
+    // Handle plan changes/upgrades
+    const currentTierOrder = { free: 0, 'one-time': 1, monthly: 2, annual: 3 };
+    const currentOrder = currentTierOrder[user?.subscriptionStatus as keyof typeof currentTierOrder] || 0;
+    const newOrder = currentTierOrder[tier as keyof typeof currentTierOrder] || 0;
+    
+    let actionType = "activate";
+    if (currentOrder < newOrder) {
+      actionType = "upgrade";
+    } else if (currentOrder > newOrder) {
+      actionType = "downgrade";
+    }
+    
+    // In production, this would integrate with Stripe or payment gateway
+    // For now, we'll just show a confirmation and proceed
+    if (tier === 'free' && user?.subscriptionStatus !== 'free') {
+      // Downgrade confirmation
+      const confirmed = window.confirm(
+        `Are you sure you want to downgrade to the Free plan? You'll lose access to paid features.`
+      );
+      if (!confirmed) return;
     }
     
     subscribeMutation.mutate(tier);
@@ -248,28 +289,54 @@ export default function Pricing() {
                           </Button>
                         ) : (
                           <>
-                            {plan.tier === "free" ? (
-                              <Button
-                                className="w-full"
-                                variant="outline"
-                                size="lg"
-                                asChild
-                                data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                              >
-                                <Link href={isAuthenticated ? "/hub" : "/auth"}>{plan.cta}</Link>
-                              </Button>
-                            ) : (
-                              <Button
-                                className="w-full"
-                                variant={plan.highlighted ? "default" : "outline"}
-                                size="lg"
-                                onClick={() => handleSelectPlan(plan.tier, plan.name)}
-                                disabled={subscribeMutation.isPending}
-                                data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                              >
-                                {isAuthenticated ? plan.cta : "Log In to Subscribe"}
-                              </Button>
-                            )}
+                            {(() => {
+                              // Calculate if this is an upgrade or downgrade
+                              const tierOrder = { free: 0, 'one-time': 1, monthly: 2, annual: 3 };
+                              const currentOrder = tierOrder[user?.subscriptionStatus as keyof typeof tierOrder] || 0;
+                              const planOrder = tierOrder[plan.tier as keyof typeof tierOrder] || 0;
+                              
+                              let buttonText = plan.cta;
+                              if (isAuthenticated && user?.subscriptionStatus) {
+                                if (planOrder > currentOrder) {
+                                  buttonText = `Upgrade to ${plan.name}`;
+                                } else if (planOrder < currentOrder) {
+                                  buttonText = `Downgrade to ${plan.name}`;
+                                } else {
+                                  buttonText = plan.cta;
+                                }
+                              } else if (!isAuthenticated) {
+                                buttonText = "Sign In to Subscribe";
+                              }
+                              
+                              if (plan.tier === "free") {
+                                return (
+                                  <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    size="lg"
+                                    asChild
+                                    data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                                  >
+                                    <Link href={isAuthenticated ? "/hub" : "/auth"}>
+                                      {isAuthenticated ? "Access Hub" : "Get Started Free"}
+                                    </Link>
+                                  </Button>
+                                );
+                              }
+                              
+                              return (
+                                <Button
+                                  className="w-full"
+                                  variant={plan.highlighted ? "default" : "outline"}
+                                  size="lg"
+                                  onClick={() => handleSelectPlan(plan.tier, plan.name)}
+                                  disabled={subscribeMutation.isPending}
+                                  data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                                >
+                                  {subscribeMutation.isPending ? "Processing..." : buttonText}
+                                </Button>
+                              );
+                            })()}
                           </>
                         )}
                       </div>

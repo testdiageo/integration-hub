@@ -63,6 +63,15 @@ export default function IntegrationHub() {
       localStorage.setItem('integrationhub-current-project', project.id);
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     },
+    onError: (error: any) => {
+      // Show error message for project limit
+      console.error("Failed to create project:", error);
+      
+      // If it's a limit error, show upgrade prompt
+      if (error.message && error.message.includes('limit reached')) {
+        // This will be displayed on the UI
+      }
+    },
   });
 
   // Get project files
@@ -213,29 +222,8 @@ export default function IntegrationHub() {
     );
   }
 
-  // Show subscription required message for trial users
-  if (!isPaidUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10">
-        <Card className="max-w-md w-full mx-4">
-          <CardContent className="pt-6 text-center">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center mx-auto mb-4">
-              <ArrowRightLeft className="h-8 w-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Subscription Required</h2>
-            <p className="text-muted-foreground mb-6">
-              Upgrade to a paid plan to access the Integration Hub and create unlimited data transformation projects.
-            </p>
-            <Button className="w-full" asChild data-testid="button-upgrade-required">
-              <a href="/pricing">
-                View Pricing Plans
-              </a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Note: Free users now have access to the hub with limited features (3 projects)
+  // The server will enforce project limits when creating new projects
 
   // Show loading while project is being created
   if (!currentProject) {

@@ -307,10 +307,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files statically
   app.use('/uploads', express.static(path.resolve('uploads')));
   
-  // Create new integration project (requires login and paid subscription)
-  app.post("/api/projects", isAuthenticated, requirePaidSubscription, async (req: any, res) => {
+  // Create new integration project (requires login, free users limited to 3 projects)
+  app.post("/api/projects", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const user = req.user as any;
+      
+      // Check project limits based on subscription tier
+      const allProjects = await storage.getProjects();
+      const userProjects = allProjects.filter((p: any) => p.userId === userId);
+      
+      // Define project limits by tier
+      const projectLimits: Record<string, number> = {
+        free: 3,
+        'one-time': 10,
+        monthly: -1, // unlimited
+        annual: -1,  // unlimited
+      };
+      
+      const limit = projectLimits[user.subscriptionStatus] || 0;
+      
+      if (limit > 0 && userProjects.length >= limit) {
+        return res.status(403).json({ 
+          message: `Project limit reached. ${user.subscriptionStatus === 'free' ? 'Upgrade to a paid plan' : 'Upgrade to monthly/annual'} for ${user.subscriptionStatus === 'free' ? 'more' : 'unlimited'} projects.`,
+          limit,
+          current: userProjects.length
+        });
+      }
+      
       const validatedData = insertIntegrationProjectSchema.parse(req.body);
       const project = await storage.createProject({ ...validatedData, userId });
       res.json(project);
