@@ -35,8 +35,8 @@ export default function Home() {
                 AI-Powered Integration Platform
               </div>
               
-              <div className="py-2" style={{ overflow: 'visible' }}>
-                <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-up" data-testid="heading-hero" style={{ lineHeight: '1.3', paddingBottom: '0.1em' }}>
+              <div className="py-4" style={{ overflow: 'visible', minHeight: 'fit-content' }}>
+                <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-up" data-testid="heading-hero" style={{ lineHeight: '1.5', paddingTop: '0.1em', paddingBottom: '0.3em', display: 'block' }}>
                   Transform Data Integration with Intelligence
                 </h1>
               </div>
