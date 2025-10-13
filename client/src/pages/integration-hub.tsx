@@ -175,6 +175,17 @@ export default function Connetly() {
     setCurrentStep(3);
   };
 
+  const handleNewProject = () => {
+    // Clear current project and localStorage
+    localStorage.removeItem('integrationhub-current-project');
+    setCurrentProject(null);
+    setCurrentStep(1);
+    setHasInitializedStep(false);
+    
+    // Create a new project
+    createProjectMutation.mutate();
+  };
+
   // Get analysis data from mappings
   const analysisData = (mappings as FieldMapping[]).length > 0 ? {
     overallConfidence: Math.round(
@@ -267,7 +278,7 @@ export default function Connetly() {
                   <Save className="h-4 w-4 mr-2" />
                   Save
                 </Button>
-                <Button variant="outline" size="sm" data-testid="button-reset-project">
+                <Button variant="outline" size="sm" data-testid="button-reset-project" onClick={handleNewProject}>
                   <RefreshCcw className="h-4 w-4 mr-2" />
                   New Project
                 </Button>

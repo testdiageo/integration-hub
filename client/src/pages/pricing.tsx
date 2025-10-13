@@ -319,9 +319,11 @@ export default function Pricing() {
                               const planOrder = tierOrder[plan.tier as keyof typeof tierOrder] || 0;
                               
                               let buttonText = plan.cta;
+                              let isUpgrade = false;
                               if (isAuthenticated && user?.subscriptionStatus) {
                                 if (planOrder > currentOrder) {
                                   buttonText = `Upgrade to ${plan.name}`;
+                                  isUpgrade = true;
                                 } else if (planOrder < currentOrder) {
                                   buttonText = `Downgrade to ${plan.name}`;
                                 } else {
@@ -348,16 +350,18 @@ export default function Pricing() {
                               }
                               
                               return (
-                                <Button
-                                  className="w-full"
-                                  variant={plan.highlighted ? "default" : "outline"}
-                                  size="lg"
-                                  onClick={() => handleSelectPlan(plan.tier, plan.name)}
-                                  disabled={subscribeMutation.isPending}
-                                  data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                                >
-                                  {subscribeMutation.isPending ? "Processing..." : buttonText}
-                                </Button>
+                                <div className={isUpgrade && (plan.tier === "monthly" || plan.tier === "annual") ? "p-3 border-2 border-primary rounded-lg bg-primary/5" : ""}>
+                                  <Button
+                                    className="w-full"
+                                    variant={plan.highlighted ? "default" : "outline"}
+                                    size="lg"
+                                    onClick={() => handleSelectPlan(plan.tier, plan.name)}
+                                    disabled={subscribeMutation.isPending}
+                                    data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                                  >
+                                    {subscribeMutation.isPending ? "Processing..." : buttonText}
+                                  </Button>
+                                </div>
                               );
                             })()}
                           </>
@@ -366,7 +370,7 @@ export default function Pricing() {
 
                       <div className="space-y-4">
                         {/* Key Limits */}
-                        <div className="space-y-2 pb-4 border-b">
+                        <div className="space-y-2 pb-4">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Projects</span>
                             <span className="font-semibold">{plan.features.projects}</span>
@@ -395,7 +399,7 @@ export default function Pricing() {
                           ))}
                           
                           {/* Support */}
-                          <div className="flex items-start gap-3 pt-2 border-t">
+                          <div className="flex items-start gap-3 pt-2">
                             <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                             <span className="text-sm font-medium">{plan.features.support}</span>
                           </div>
