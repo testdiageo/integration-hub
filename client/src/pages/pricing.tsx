@@ -15,7 +15,7 @@ const pricingPlans = [
     tier: "free",
     description: "Try Connetly with limited features",
     price: "0",
-    period: "forever",
+    period: "once",
     icon: Gift,
     badge: null,
     features: [
@@ -212,7 +212,7 @@ export default function Pricing() {
     <>
       <SEOHead
         title="Pricing Plans - Connetly | Flexible Options for Every Team"
-        description="Choose the perfect Connetly plan for your needs. Free forever plan, one-time purchase, or monthly/annual subscriptions with AI-powered field mapping and code generation."
+        description="Choose the perfect Connetly plan for your needs. Free plan available once per user, one-time purchase, or monthly/annual subscriptions with AI-powered field mapping and code generation."
         keywords="integration pricing, data transformation pricing, XSLT tool pricing, API integration cost, field mapping subscription"
         canonicalUrl={`${window.location.origin}/pricing`}
       />

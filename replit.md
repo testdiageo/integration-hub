@@ -86,7 +86,7 @@ Preferred communication style: Simple, everyday language.
 - **Payment Integration**: Stripe SDK
 - **Freemium Model**: Free tier with limited features (3 projects, 5 row preview, 14-day retention)
 - **Subscription Tiers**: 
-  - Free: $0/forever - Limited features, 3 projects
+  - Free: $0/once - Limited features, 3 projects (one-time per user)
   - One-Time: $49 - 10 projects, 60-day retention
   - Monthly: $99/month - Unlimited projects and features
   - Annual: $999/year - Everything in Monthly + 2 months free
