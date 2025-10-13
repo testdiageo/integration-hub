@@ -14,7 +14,7 @@ const blogPosts = [
     date: "2025-01-10",
     readTime: "12 min read",
     category: "Technical Deep Dive",
-    image: "/api/placeholder/400/250",
+    image: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&h=500&fit=crop",
     featured: true,
   },
   {
@@ -25,7 +25,7 @@ const blogPosts = [
     date: "2024-12-28",
     readTime: "15 min read",
     category: "Tutorial",
-    image: "/api/placeholder/400/250",
+    image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=500&fit=crop",
   },
   {
     id: 1,
@@ -35,7 +35,7 @@ const blogPosts = [
     date: "2025-01-15",
     readTime: "8 min read",
     category: "Best Practices",
-    image: "/api/placeholder/400/250",
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=500&fit=crop",
   },
   {
     id: 3,
@@ -45,7 +45,7 @@ const blogPosts = [
     date: "2025-01-05",
     readTime: "6 min read",
     category: "AI & Innovation",
-    image: "/api/placeholder/400/250",
+    image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=500&fit=crop",
   },
   {
     id: 5,
@@ -55,7 +55,7 @@ const blogPosts = [
     date: "2024-12-20",
     readTime: "10 min read",
     category: "Performance",
-    image: "/api/placeholder/400/250",
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=500&fit=crop",
   },
   {
     id: 6,
@@ -65,7 +65,7 @@ const blogPosts = [
     date: "2024-12-15",
     readTime: "9 min read",
     category: "Integration",
-    image: "/api/placeholder/400/250",
+    image: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&h=500&fit=crop",
   },
 ];
 
@@ -133,7 +133,17 @@ export default function Blog() {
             {blogPosts[0] && (
               <Card className="overflow-hidden hover:shadow-xl transition-shadow" data-testid="card-featured-post">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 aspect-video md:aspect-auto" />
+                  <div className="relative aspect-video md:aspect-auto overflow-hidden bg-gradient-to-br from-blue-600/20 to-purple-600/20">
+                    <img 
+                      src={blogPosts[0].image} 
+                      alt={blogPosts[0].title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to gradient background if image fails to load
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
                   <CardContent className="p-6 md:p-8 flex flex-col justify-center">
                     <Badge className="w-fit mb-4" data-testid="badge-featured-category">{blogPosts[0].category}</Badge>
                     <CardTitle className="text-3xl mb-4" data-testid="title-featured-post">{blogPosts[0].title}</CardTitle>
@@ -169,7 +179,17 @@ export default function Blog() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {blogPosts.slice(1).map((post) => (
                 <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col" data-testid={`card-blog-post-${post.id}`}>
-                  <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 aspect-video" />
+                  <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-blue-600/20 to-purple-600/20">
+                    <img 
+                      src={post.image} 
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to gradient background if image fails to load
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
                   <CardHeader>
                     <Badge className="w-fit mb-2" data-testid={`badge-category-${post.id}`}>{post.category}</Badge>
                     <CardTitle className="line-clamp-2" data-testid={`title-post-${post.id}`}>{post.title}</CardTitle>
