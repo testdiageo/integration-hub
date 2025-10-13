@@ -258,14 +258,14 @@ export default function Pricing() {
         {/* Pricing Cards */}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
               {pricingPlans.map((plan, idx) => {
                 const Icon = plan.icon;
                 const isCurrentPlan = user?.subscriptionStatus === plan.tier;
                 return (
                   <Card
                     key={idx}
-                    className={`relative overflow-hidden ${
+                    className={`relative overflow-hidden flex flex-col h-full ${
                       plan.highlighted ? "border-primary shadow-xl md:scale-105" : ""
                     } ${isCurrentPlan ? "ring-2 ring-primary" : ""}`}
                     data-testid={`card-pricing-${plan.name.toLowerCase()}`}
@@ -298,7 +298,7 @@ export default function Pricing() {
                       </div>
                     </CardHeader>
 
-                    <CardContent>
+                    <CardContent className="flex-1 flex flex-col">
                       <div className="space-y-2 mb-6">
                         {isCurrentPlan ? (
                           <Button
@@ -350,18 +350,16 @@ export default function Pricing() {
                               }
                               
                               return (
-                                <div className={isUpgrade && (plan.tier === "monthly" || plan.tier === "annual") ? "p-3 border-2 border-primary rounded-lg bg-primary/5" : ""}>
-                                  <Button
-                                    className="w-full"
-                                    variant={plan.highlighted ? "default" : "outline"}
-                                    size="lg"
-                                    onClick={() => handleSelectPlan(plan.tier, plan.name)}
-                                    disabled={subscribeMutation.isPending}
-                                    data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                                  >
-                                    {subscribeMutation.isPending ? "Processing..." : buttonText}
-                                  </Button>
-                                </div>
+                                <Button
+                                  className="w-full"
+                                  variant="outline"
+                                  size="lg"
+                                  onClick={() => handleSelectPlan(plan.tier, plan.name)}
+                                  disabled={subscribeMutation.isPending}
+                                  data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                                >
+                                  {subscribeMutation.isPending ? "Processing..." : buttonText}
+                                </Button>
                               );
                             })()}
                           </>
