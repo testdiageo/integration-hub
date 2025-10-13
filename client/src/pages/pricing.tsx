@@ -18,12 +18,19 @@ const pricingPlans = [
     period: "forever",
     icon: Gift,
     badge: null,
-    features: [
-      "AI-powered field mapping",
-      "XSLT & DataWeave generation",
-      "Basic validation (5 rows preview)",
-      "CSV, JSON, XML support",
-    ],
+    features: {
+      projects: "0 projects",
+      retention: "0 days",
+      downloads: "No downloads",
+      teamSize: "1 user",
+      support: "Community support",
+      features: [
+        "AI-powered field mapping",
+        "XSLT & DataWeave generation",
+        "Basic validation (5 rows preview)",
+        "CSV, JSON, XML support",
+      ],
+    },
     cta: "Get Started Free",
     highlighted: false,
   },
@@ -35,14 +42,19 @@ const pricingPlans = [
     period: "one-time",
     icon: Zap,
     badge: null,
-    features: [
-      "AI-powered field mapping",
-      "XSLT & DataWeave generation",
-      "Standard validation (50 rows preview)",
-      "All file formats supported",
-      "Email support",
-      "60-day project retention",
-    ],
+    features: {
+      projects: "3 projects",
+      retention: "60 days",
+      downloads: "3/month",
+      teamSize: "1 user",
+      support: "Email support",
+      features: [
+        "AI-powered field mapping",
+        "XSLT & DataWeave generation",
+        "Standard validation (50 rows preview)",
+        "All file formats supported",
+      ],
+    },
     cta: "Purchase Once",
     highlighted: false,
   },
@@ -54,18 +66,21 @@ const pricingPlans = [
     period: "month",
     icon: TrendingUp,
     badge: "Most Popular",
-    features: [
-      "Unlimited integration projects",
-      "Advanced AI field mapping",
-      "XSLT & DataWeave generation",
-      "Advanced validation (unlimited preview)",
-      "All file formats supported",
-      "Priority email support",
-      "Unlimited project retention",
-      "Team collaboration (up to 5 users)",
-      "API access",
-      "Custom transformation templates",
-    ],
+    features: {
+      projects: "5 projects",
+      retention: "120 days",
+      downloads: "5/month",
+      teamSize: "1 user",
+      support: "Priority email support",
+      features: [
+        "Advanced AI field mapping",
+        "XSLT & DataWeave generation",
+        "Advanced validation (unlimited preview)",
+        "All file formats supported",
+        "API access",
+        "Custom transformation templates",
+      ],
+    },
     cta: "Start Monthly",
     highlighted: true,
   },
@@ -77,18 +92,23 @@ const pricingPlans = [
     period: "year",
     icon: Crown,
     badge: "Best Value",
-    features: [
-      "Everything in Monthly",
-      "2 months free (save $189)",
-      "Unlimited team members",
-      "Dedicated account manager",
-      "Custom AI model training",
-      "24/7 priority support",
-      "SLA guarantee",
-      "Advanced security & compliance",
-      "Training & onboarding",
-      "Custom integrations",
-    ],
+    features: {
+      projects: "50 projects",
+      retention: "Unlimited",
+      downloads: "50/year",
+      teamSize: "2 users",
+      support: "24/7 priority support",
+      features: [
+        "Everything in Monthly",
+        "2 months free (save $189)",
+        "Dedicated account manager",
+        "Custom AI model training",
+        "SLA guarantee",
+        "Advanced security & compliance",
+        "Training & onboarding",
+        "Custom integrations",
+      ],
+    },
     cta: "Subscribe Annually",
     highlighted: false,
   },
@@ -97,23 +117,31 @@ const pricingPlans = [
 const faqs = [
   {
     question: "Can I switch plans later?",
-    answer: "Yes! Free users can upgrade to any paid plan anytime. Paid users can switch between monthly and annual subscriptions. Changes take effect immediately.",
+    answer: "Yes! You can upgrade to any paid plan anytime. Paid users can switch between plans. Changes take effect immediately, and you'll be charged/credited the pro-rated difference.",
   },
   {
     question: "What payment methods do you accept?",
-    answer: "We accept all major credit cards (Visa, MasterCard, American Express) via Stripe. Annual plans also support invoice billing.",
+    answer: "We accept all major credit cards (Visa, MasterCard, American Express) via Stripe. Annual plans also support invoice billing for enterprise customers.",
   },
   {
     question: "What's included in the Free plan?",
-    answer: "The Free plan includes 3 integration projects with AI-powered field mapping and code generation. You can preview up to 5 rows of transformed data and export your transformation code.",
+    answer: "The Free plan allows you to explore the platform but does not include project creation or downloads. It's designed to help you understand the platform before subscribing. Upgrade to start creating projects.",
   },
   {
-    question: "What happens after a one-time purchase expires?",
-    answer: "One-time purchases give you 60 days of access. After that, your projects are archived but you can upgrade to monthly/annual to restore access or purchase another one-time plan.",
+    question: "How do project limits work?",
+    answer: "Each tier has a maximum number of active projects: One-Time (3), Monthly (5), Annual (50). You can delete old projects to create new ones if you reach your limit. Data retention policies determine how long projects are kept.",
+  },
+  {
+    question: "How do download limits work?",
+    answer: "Download limits reset monthly for One-Time and Monthly plans, and annually for Annual plans. One-Time: 3/month, Monthly: 5/month, Annual: 50/year. Track your usage in your account dashboard.",
+  },
+  {
+    question: "What happens when data retention expires?",
+    answer: "Projects older than your retention period are automatically deleted. One-Time: 60 days, Monthly: 120 days, Annual: Unlimited. Upgrade to extend retention or download your work before expiration.",
   },
   {
     question: "Do you offer refunds?",
-    answer: "Yes, we offer a 30-day money-back guarantee for monthly and annual subscriptions. One-time purchases are non-refundable after you create your first project.",
+    answer: "Yes, we offer a 30-day money-back guarantee for all paid subscriptions. Simply contact support if you're not satisfied within 30 days of purchase.",
   },
 ];
 
@@ -336,13 +364,42 @@ export default function Pricing() {
                         )}
                       </div>
 
-                      <div className="space-y-3">
-                        {plan.features.map((feature, featureIdx) => (
-                          <div key={featureIdx} className="flex items-start gap-3" data-testid={`feature-${plan.name.toLowerCase()}-${featureIdx}`}>
-                            <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                            <span className="text-sm text-muted-foreground">{feature}</span>
+                      <div className="space-y-4">
+                        {/* Key Limits */}
+                        <div className="space-y-2 pb-4 border-b">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Projects</span>
+                            <span className="font-semibold">{plan.features.projects}</span>
                           </div>
-                        ))}
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Retention</span>
+                            <span className="font-semibold">{plan.features.retention}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Downloads</span>
+                            <span className="font-semibold">{plan.features.downloads}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Team Size</span>
+                            <span className="font-semibold">{plan.features.teamSize}</span>
+                          </div>
+                        </div>
+
+                        {/* Features List */}
+                        <div className="space-y-3">
+                          {plan.features.features.map((feature: string, featureIdx: number) => (
+                            <div key={featureIdx} className="flex items-start gap-3" data-testid={`feature-${plan.name.toLowerCase()}-${featureIdx}`}>
+                              <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                              <span className="text-sm text-muted-foreground">{feature}</span>
+                            </div>
+                          ))}
+                          
+                          {/* Support */}
+                          <div className="flex items-start gap-3 pt-2 border-t">
+                            <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-sm font-medium">{plan.features.support}</span>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -352,8 +409,113 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* FAQ Section */}
+        {/* Feature Comparison Table */}
         <section className="py-16 bg-muted/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center mb-12" data-testid="heading-comparison">
+              Detailed Feature Comparison
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse bg-card rounded-lg overflow-hidden shadow-lg">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="p-4 text-left font-semibold">Feature</th>
+                    <th className="p-4 text-center font-semibold">Free</th>
+                    <th className="p-4 text-center font-semibold">One-Time</th>
+                    <th className="p-4 text-center font-semibold">Monthly</th>
+                    <th className="p-4 text-center font-semibold bg-primary/10">Annual</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  <tr>
+                    <td className="p-4 font-medium">Projects</td>
+                    <td className="p-4 text-center">0</td>
+                    <td className="p-4 text-center">3</td>
+                    <td className="p-4 text-center">5</td>
+                    <td className="p-4 text-center bg-primary/5">50</td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">Data Retention</td>
+                    <td className="p-4 text-center">0 days</td>
+                    <td className="p-4 text-center">60 days</td>
+                    <td className="p-4 text-center">120 days</td>
+                    <td className="p-4 text-center bg-primary/5">Unlimited</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">Downloads</td>
+                    <td className="p-4 text-center">
+                      <span className="text-destructive">❌</span>
+                    </td>
+                    <td className="p-4 text-center">3/month</td>
+                    <td className="p-4 text-center">5/month</td>
+                    <td className="p-4 text-center bg-primary/5">50/year</td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">Team Size</td>
+                    <td className="p-4 text-center">1 user</td>
+                    <td className="p-4 text-center">1 user</td>
+                    <td className="p-4 text-center">1 user</td>
+                    <td className="p-4 text-center bg-primary/5">2 users</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">AI-Powered Field Mapping</td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center bg-primary/5">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">XSLT & DataWeave Generation</td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center bg-primary/5">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">Validation Preview</td>
+                    <td className="p-4 text-center text-sm">5 rows</td>
+                    <td className="p-4 text-center text-sm">50 rows</td>
+                    <td className="p-4 text-center text-sm">Unlimited</td>
+                    <td className="p-4 text-center text-sm bg-primary/5">Unlimited</td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">File Format Support</td>
+                    <td className="p-4 text-center text-sm">CSV, JSON, XML</td>
+                    <td className="p-4 text-center text-sm">All formats</td>
+                    <td className="p-4 text-center text-sm">All formats</td>
+                    <td className="p-4 text-center text-sm bg-primary/5">All formats</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">Support</td>
+                    <td className="p-4 text-center text-sm">Community</td>
+                    <td className="p-4 text-center text-sm">Email</td>
+                    <td className="p-4 text-center text-sm">Priority Email</td>
+                    <td className="p-4 text-center text-sm bg-primary/5">24/7 Priority</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-16">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center mb-12" data-testid="heading-faq">
               Frequently Asked Questions

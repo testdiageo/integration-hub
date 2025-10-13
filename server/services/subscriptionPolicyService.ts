@@ -24,7 +24,7 @@ export class SubscriptionPolicyService {
   static getSubscriptionLimits(subscriptionStatus: string): SubscriptionLimits {
     const limits: Record<string, SubscriptionLimits> = {
       free: {
-        maxProjects: 0, // Free users get no projects now
+        maxProjects: 0, // Free users get no projects
         retentionDays: 0, // No retention
         maxDownloads: 0, // No downloads
         downloadPeriod: 'monthly',
@@ -32,27 +32,27 @@ export class SubscriptionPolicyService {
         canDownload: false,
       },
       'one-time': {
-        maxProjects: -1, // Unlimited projects for one-time
-        retentionDays: 60,
-        maxDownloads: -1, // Unlimited downloads
-        downloadPeriod: 'unlimited',
+        maxProjects: 3, // 3 projects for one-time purchase
+        retentionDays: 60, // 60 days retention
+        maxDownloads: 3, // 3 downloads per month
+        downloadPeriod: 'monthly',
         teamSize: 1,
         canDownload: true,
       },
       monthly: {
-        maxProjects: -1, // Unlimited
-        retentionDays: -1, // Unlimited retention
-        maxDownloads: 10,
+        maxProjects: 5, // 5 projects max
+        retentionDays: 120, // 120 days retention
+        maxDownloads: 5, // 5 downloads per month
         downloadPeriod: 'monthly',
-        teamSize: 5,
+        teamSize: 1,
         canDownload: true,
       },
       annual: {
-        maxProjects: -1, // Unlimited
+        maxProjects: 50, // 50 projects max
         retentionDays: -1, // Unlimited retention
-        maxDownloads: 140,
+        maxDownloads: 50, // 50 downloads per year
         downloadPeriod: 'annual',
-        teamSize: -1, // Unlimited
+        teamSize: 2,
         canDownload: true,
       },
     };
