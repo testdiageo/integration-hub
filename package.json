@@ -2,13 +2,18 @@
   "name": "connetly",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "dev": "vite",
+    "prebuild": "node scripts/prebuild.js",
     "build": "vite build && esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --packages=external --external:vite --external:vite.config.ts",
     "start": "cross-env NODE_ENV=production node dist/index.js",
+    "dev": "vite",
     "tailwind:init": "tailwindcss init -p"
   },
   "dependencies": {
+    "@octokit/rest": "^22.0.0",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -36,13 +41,17 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.6",
+    "drizzle-zod": "^0.7.1",
     "express": "^4.21.2",
     "express-session": "^1.18.2",
     "fast-xml-parser": "^5.3.0",
     "lucide-react": "^0.545.0",
+    "memoizee": "^0.4.17",
     "memorystore": "^1.6.7",
     "multer": "^2.0.2",
+    "nanoid": "^5.1.6",
     "openai": "^6.3.0",
+    "openid-client": "^6.8.1",
     "papaparse": "^5.5.3",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
@@ -55,7 +64,8 @@
     "tailwind-merge": "^3.3.1",
     "wouter": "^3.7.1",
     "xlsx": "^0.18.5",
-    "xmldom": "^0.6.0"
+    "xmldom": "^0.6.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
@@ -69,8 +79,5 @@
     "tailwindcss": "^4.1.14",
     "typescript": "^5.6.3",
     "vite": "^5.4.20"
-  },
-  "engines": {
-    "node": ">=18"
   }
 }

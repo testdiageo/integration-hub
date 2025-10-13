@@ -3,10 +3,9 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes.js";
-import { serveStatic } from "./vite.js";
-import { setupVite } from "./vite.js";
+import { serveStatic, setupVite } from "./vite.js";
 
-// Compute proper __dirname in ESM
+// ✅ Fix __dirname and __filename for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -29,8 +28,8 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  // ✅ Run dev or production logic safely
   const env = process.env.NODE_ENV || "production";
+
   if (env === "development") {
     console.log("🚀 Running in development mode (Vite middleware active)");
     await setupVite(app, server);

@@ -5,6 +5,11 @@ import { execSync } from "child_process";
 // --- Configuration ---
 const serverDir = path.resolve("server");
 
+// --- Ignore built-in Node modules ---
+const BUILT_INS = new Set([
+  "fs", "path", "url", "http", "https", "crypto", "util", "os", "zlib", "stream", "events"
+]);
+
 // --- Utility functions ---
 function getAllFiles(dir) {
   let results = [];
@@ -35,40 +40,28 @@ const pkgPath = path.resolve("package.json");
 const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
 
 const declaredDeps = Object.keys(pkg.dependencies || {});
-const missing = [...imports].filter(p => !declaredDeps.includes(p));
+const missing = [...imports].filter(p =>
+  !declaredDeps.includes(p) &&
+  !BUILT_INS.has(p) &&
+  !p.startsWith("@shared/")
+);
 
-// --- Common peer dependency mapping ---
-const peerMap = {
-  "drizzle-zod": ["zod"],
-  "connect-pg-simple": ["pg"],
-  "passport": ["express-session"],
-  "multer": ["express"],
-  "drizzle-orm": ["pg"],
-  "openai": ["axios"],
+// --- Fix alias mappings ---
+const aliasMap = {
+  "openid-client/passport": "openid-client",
 };
 
-let allToInstall = [...missing];
-for (const pkgName of missing) {
-  const peers = peerMap[pkgName];
-  if (peers) {
-    for (const peer of peers) {
-      if (!declaredDeps.includes(peer)) {
-        allToInstall.push(peer);
-      }
-    }
-  }
-}
-
-allToInstall = [...new Set(allToInstall)];
+let allToInstall = missing.map(m => aliasMap[m] || m);
 
 if (allToInstall.length > 0) {
+  allToInstall = [...new Set(allToInstall)];
   console.log(`📦 Installing missing dependencies: ${allToInstall.join(", ")}`);
   try {
     execSync(`npm install ${allToInstall.join(" ")}`, { stdio: "inherit" });
-    console.log("✅ All missing dependencies and peers installed successfully.");
+    console.log("✅ All missing dependencies installed successfully.");
   } catch (err) {
     console.error("❌ Failed to install some dependencies:", err.message);
   }
 } else {
-  console.log("✅ All dependencies and peer deps are already installed.");
+  console.log("✅ All dependencies are already installed.");
 }
