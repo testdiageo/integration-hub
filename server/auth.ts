@@ -175,11 +175,35 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.post("/api/logout", (req, res, next) => {
-    req.logout((err) => {
-      if (err) return next(err);
-      res.sendStatus(200);
-    });
+  app.post("/api/logout", async (req: any, res, next) => {
+    try {
+      const user = req.user as SelectUser;
+      
+      // Clean up data for free users before logging out
+      if (user && user.subscriptionStatus === 'free') {
+        console.log(`[LOGOUT] Cleaning up data for free user: ${user.username}`);
+        
+        // Import the subscription policy service dynamically to avoid circular dependency
+        const { SubscriptionPolicyService } = await import('./services/subscriptionPolicyService.js');
+        
+        const cleanup = await SubscriptionPolicyService.deleteAllUserData(user.id);
+        console.log(
+          `[LOGOUT] Cleanup complete: ${cleanup.projectsDeleted} projects, ${cleanup.filesDeleted} files deleted`
+        );
+      }
+      
+      req.logout((err) => {
+        if (err) return next(err);
+        res.sendStatus(200);
+      });
+    } catch (error) {
+      console.error('[LOGOUT] Error during cleanup:', error);
+      // Still log out the user even if cleanup fails
+      req.logout((err) => {
+        if (err) return next(err);
+        res.sendStatus(200);
+      });
+    }
   });
 
   app.get("/api/user", (req, res) => {

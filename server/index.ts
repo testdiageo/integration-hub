@@ -6,6 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes.js";
 import { serveStatic, setupVite } from "./vite.js";
+import { SubscriptionPolicyService } from "./services/subscriptionPolicyService.js";
 
 // ✅ Fix __dirname and __filename for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -48,5 +49,26 @@ app.use((req, res, next) => {
     if (process.env.RAILWAY_ENVIRONMENT) {
       console.log(`🏗️ Railway environment: ${process.env.RAILWAY_ENVIRONMENT}`);
     }
+    
+    // Start scheduled cleanup job (runs every 24 hours)
+    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    // Run cleanup on startup (after a 1-minute delay to let server initialize)
+    setTimeout(() => {
+      console.log('🧹 Running initial cleanup job...');
+      SubscriptionPolicyService.runScheduledCleanup().catch(error => {
+        console.error('❌ Initial cleanup job failed:', error);
+      });
+    }, 60 * 1000); // 1 minute delay
+    
+    // Schedule recurring cleanup
+    setInterval(() => {
+      console.log('🧹 Running scheduled cleanup job...');
+      SubscriptionPolicyService.runScheduledCleanup().catch(error => {
+        console.error('❌ Scheduled cleanup job failed:', error);
+      });
+    }, CLEANUP_INTERVAL);
+    
+    console.log('🧹 Cleanup job scheduled (runs every 24 hours)');
   });
 })();
