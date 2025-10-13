@@ -126,12 +126,13 @@ export default function AuthPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="register-email">Email (optional)</Label>
+                      <Label htmlFor="register-email">Email</Label>
                       <Input
                         id="register-email"
                         type="email"
                         value={registerForm.email}
                         onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                        required
                         data-testid="input-register-email"
                       />
                     </div>
