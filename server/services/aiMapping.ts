@@ -1,9 +1,12 @@
-import OpenAI from "openai";
-import { DetectedSchema } from "./fileProcessor";
+import dotenv from "dotenv";
+dotenv.config();
 
-// the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || "default_key" 
+import OpenAI from "openai";
+import { DetectedSchema } from "./fileProcessor.js"; // keep .js if this is compiled ESM
+
+// ✅ Proper OpenAI client initialization
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY,
 });
 
 export interface FieldMappingSuggestion {
