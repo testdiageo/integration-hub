@@ -6,10 +6,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SubscriptionProvider } from "@/contexts/subscription-context";
 import { Navigation } from "@/components/navigation";
 import Home from "@/pages/home";
-import IntegrationHub from "@/pages/integration-hub";
+import Connetly from "@/pages/integration-hub";
 import Blog from "@/pages/blog";
 import BlogArticle from "@/pages/blog-article";
 import Pricing from "@/pages/pricing";
+import AdminDashboard from "@/pages/admin";
+import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,10 +20,12 @@ function Router() {
       <Navigation />
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/hub" component={IntegrationHub} />
+        <Route path="/hub" component={Connetly} />
         <Route path="/blog/:id" component={BlogArticle} />
         <Route path="/blog" component={Blog} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>
     </>

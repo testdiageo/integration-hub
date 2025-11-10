@@ -1,6 +1,16 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+﻿import dotenv from "dotenv";
+dotenv.config();
+import express from "express";
+import { createServer } from "http";
+import path from "path";
+import { fileURLToPath } from "url";
+import { registerRoutes } from "./routes.js";
+import { serveStatic, setupVite } from "./vite.js";
+import { SubscriptionPolicyService } from "./services/subscriptionPolicyService.js";
+
+// ✅ Fix __dirname and __filename for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
@@ -9,16 +19,8 @@ app.use(express.urlencoded({ extended: false }));
 // Simple request logger for API routes
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
+  const originalJson = res.json;
+  res.json = function (body, ...args) {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
@@ -48,6 +50,7 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
+    console.log("🏗️ Running in production mode (serving static build)");
     serveStatic(app);
   }
 

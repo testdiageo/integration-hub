@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <>
       <SEOHead
-        title="IntegrationHub - AI-Powered Data Integration & Transformation Platform"
+        title="Connetly - AI-Powered Data Integration & Transformation Platform"
         description="Transform your data integration workflow with AI-powered field mapping, automated XSLT and DataWeave generation, and intelligent transformation logic. Support for CSV, JSON, XML, and Excel formats."
         keywords="data integration, AI field mapping, XSLT generation, DataWeave transformation, API integration, data transformation, ETL tool, integration platform"
         canonicalUrl={window.location.origin}
@@ -29,15 +29,17 @@ export default function Home() {
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 animate-pulse" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 relative">
-            <div className="text-center max-w-4xl mx-auto">
+            <div className="text-center max-w-4xl mx-auto" style={{ overflow: 'visible' }}>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in" data-testid="badge-ai-powered">
                 <Sparkles className="h-4 w-4" />
                 AI-Powered Integration Platform
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-up" data-testid="heading-hero">
-                Transform Data Integration with Intelligence
-              </h1>
+              <div className="py-4" style={{ overflow: 'visible', minHeight: 'fit-content' }}>
+                <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-up" data-testid="heading-hero" style={{ lineHeight: '1.5', paddingTop: '0.1em', paddingBottom: '0.3em', display: 'block' }}>
+                  Transform Data Integration with Intelligence
+                </h1>
+              </div>
               
               <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-fade-in-up animation-delay-200" data-testid="text-hero-description">
                 Upload your source and target files. Map fields, generate transformation logic, and create production-ready XSLT or DataWeave code in minutes.
@@ -179,7 +181,7 @@ export default function Home() {
                   Ready to Transform Your Integration Workflow?
                 </h2>
                 <p className="text-xl opacity-90 mb-8" data-testid="text-cta-description">
-                  Join thousands of developers who trust IntegrationHub for their data transformation needs
+                  Join thousands of developers who trust Connetly for their data transformation needs
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" variant="secondary" asChild className="text-lg px-8" data-testid="button-cta-start">

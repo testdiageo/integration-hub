@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSubscription } from "@/contexts/subscription-context";
+import { DownloadAuthDialog } from "@/components/download-auth-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { 
   CheckCircle, 
@@ -14,7 +18,8 @@ import {
   ArrowLeft,
   Workflow,
   Lock,
-  Crown
+  Crown,
+  Loader2
 } from "lucide-react";
 
 interface ValidationSuccessProps {
@@ -35,11 +40,27 @@ export function ValidationSuccessStep({
   onBackToValidation 
 }: ValidationSuccessProps) {
   const { isTrial, isPaid } = useSubscription();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [authDialogData, setAuthDialogData] = useState<{
+    message?: string;
+    remaining?: number;
+    resetDate?: string;
+  }>({});
+  const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
 
-  const handleDownload = (fileType: string) => {
+  const handleDownload = async (fileType: string) => {
+    // Show dialog immediately for trial users
     if (isTrial) {
-      return; // Prevent download for trial users
+      setAuthDialogData({
+        message: "Upgrade to download files. Free users can view files but cannot download them.",
+      });
+      setAuthDialogOpen(true);
+      return;
     }
+
     let endpoint = '';
     let filename = '';
     
@@ -62,8 +83,57 @@ export function ValidationSuccessStep({
         break;
     }
     
-    if (endpoint) {
-      window.open(endpoint, '_blank');
+    if (!endpoint) return;
+
+    try {
+      setDownloadingFile(fileType);
+
+      // Make authenticated request
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        credentials: 'include', // Important for session cookies
+      });
+
+      if (response.status === 403) {
+        // Authorization failed - show friendly dialog
+        const errorData = await response.json();
+        setAuthDialogData({
+          message: errorData.message,
+          remaining: errorData.remaining,
+        });
+        setAuthDialogOpen(true);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`);
+      }
+
+      // Download successful - create blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Show success toast
+      toast({
+        title: "Download Started",
+        description: `${filename} is downloading...`,
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download Failed",
+        description: error instanceof Error ? error.message : "An error occurred while downloading the file",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingFile(null);
     }
   };
 
@@ -158,10 +228,24 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('xslt')}
                   className="w-full bg-blue-600 hover:bg-blue-700"
                   data-testid="button-download-success-xslt"
-                  disabled={isTrial}
+                  disabled={isTrial || downloadingFile === 'xslt'}
                 >
-                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                  {isTrial ? "Locked" : "Download XSLT"}
+                  {downloadingFile === 'xslt' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : isTrial ? (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Locked
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download XSLT
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -185,10 +269,24 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('dataweave')}
                   className="w-full bg-amber-600 hover:bg-amber-700"
                   data-testid="button-download-success-dataweave"
-                  disabled={isTrial}
+                  disabled={isTrial || downloadingFile === 'dataweave'}
                 >
-                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                  {isTrial ? "Locked" : "Download DataWeave"}
+                  {downloadingFile === 'dataweave' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : isTrial ? (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Locked
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download DataWeave
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -212,10 +310,24 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('mapping')}
                   className="w-full bg-green-600 hover:bg-green-700"
                   data-testid="button-download-success-mapping"
-                  disabled={isTrial}
+                  disabled={isTrial || downloadingFile === 'mapping'}
                 >
-                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                  {isTrial ? "Locked" : "Download Mappings"}
+                  {downloadingFile === 'mapping' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : isTrial ? (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Locked
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Mappings
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -239,10 +351,24 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('documentation')}
                   className="w-full bg-purple-600 hover:bg-purple-700"
                   data-testid="button-download-success-documentation"
-                  disabled={isTrial}
+                  disabled={isTrial || downloadingFile === 'documentation'}
                 >
-                  {isTrial ? <Lock className="mr-2 h-4 w-4" /> : <Download className="mr-2 h-4 w-4" />}
-                  {isTrial ? "Locked" : "Download Docs"}
+                  {downloadingFile === 'documentation' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : isTrial ? (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Locked
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Docs
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -284,6 +410,16 @@ export function ValidationSuccessStep({
           Start New Project
         </Button>
       </div>
+
+      {/* Download Authorization Dialog */}
+      <DownloadAuthDialog
+        open={authDialogOpen}
+        onOpenChange={setAuthDialogOpen}
+        errorMessage={authDialogData.message}
+        userTier={user?.subscriptionStatus || 'free'}
+        remaining={authDialogData.remaining}
+        resetDate={authDialogData.resetDate}
+      />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { storage } from "./storage";
 import { FileProcessor } from "./services/fileProcessor";
 import { AIMappingService } from "./services/aiMapping";
 import { XSLTValidatorService } from "./services/xsltValidator";
+import { SubscriptionPolicyService } from "./services/subscriptionPolicyService";
+import { setupAuth, isAuthenticated, requirePaidSubscription, requireAdmin } from "./auth";
 import { 
   insertIntegrationProjectSchema,
   fileUploadSchema,
@@ -21,6 +23,8 @@ const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
+
+// Note: Download limit functions moved to SubscriptionPolicyService
 
 // Helper function to generate DataWeave content
 function generateDataWeaveContent(mappings: any[]): string {
@@ -236,14 +240,98 @@ ${mappings.map((m, index) => `
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  await setupAuth(app);
+
+  // Auth routes - this endpoint doesn't require middleware, but validates session internally
+  app.get('/api/auth/user', async (req: any, res) => {
+    try {
+      // Use Passport's isAuthenticated() to safely check session validity
+      if (!req.isAuthenticated()) {
+        return res.json(null);
+      }
+      
+      // Session is valid, fetch user data
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Update user subscription (for testing - in production this would be handled by Stripe webhook)
+  app.post('/api/auth/subscribe', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { tier } = req.body; // tier can be: free, one-time, monthly, annual
+      const user = await storage.updateUserSubscription(userId, tier, tier);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      res.status(500).json({ message: "Failed to update subscription" });
+    }
+  });
+
+  // Admin routes
+  app.get('/api/admin/users', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id/admin', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { isAdmin } = req.body;
+      const user = await storage.updateUserAdmin(req.params.id, isAdmin);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user admin status:", error);
+      res.status(500).json({ message: "Failed to update user admin status" });
+    }
+  });
+
+  app.patch('/api/admin/users/:id/subscription', isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { subscriptionStatus, subscriptionTier } = req.body;
+      const user = await storage.updateUserSubscription(req.params.id, subscriptionStatus, subscriptionTier);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user subscription:", error);
+      res.status(500).json({ message: "Failed to update user subscription" });
+    }
+  });
+
   // Serve uploaded files statically
   app.use('/uploads', express.static(path.resolve('uploads')));
   
-  // Create new integration project
-  app.post("/api/projects", async (req, res) => {
+  // Create new integration project (requires login, enforces subscription limits)
+  app.post("/api/projects", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.id;
+      const user = req.user as any;
+      
+      // Check if user can create projects based on their subscription
+      const canCreate = await SubscriptionPolicyService.canCreateProject(
+        userId,
+        user.subscriptionStatus
+      );
+      
+      if (!canCreate.allowed) {
+        return res.status(403).json({ 
+          message: canCreate.message,
+          limit: canCreate.limit,
+          current: canCreate.current
+        });
+      }
+      
       const validatedData = insertIntegrationProjectSchema.parse(req.body);
-      const project = await storage.createProject(validatedData);
+      const project = await storage.createProject({ ...validatedData, userId });
       res.json(project);
     } catch (error) {
       res.status(400).json({ message: error instanceof Error ? error.message : 'Unknown error' });
@@ -380,6 +468,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Generate AI field mappings
   app.post("/api/projects/:id/generate-mappings", async (req, res) => {
+    // Set a longer timeout for this endpoint (150 seconds)
+    req.setTimeout(150000);
+    
+    console.log(`[ROUTE] Starting field mapping generation for project ${req.params.id}`);
+    
     try {
       const { projectId } = generateMappingSchema.parse({ projectId: req.params.id });
       
@@ -389,23 +482,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const targetFile = files.find(f => f.systemType === "target");
 
       if (!sourceFile || !targetFile) {
+        console.log('[ROUTE] Missing source or target file');
         return res.status(400).json({ 
           message: "Both source and target files are required" 
         });
       }
 
       if (!sourceFile.detectedSchema || !targetFile.detectedSchema) {
+        console.log('[ROUTE] Missing file schemas');
         return res.status(400).json({ 
           message: "File schemas could not be detected" 
         });
       }
 
-      // Generate AI mappings
+      console.log('[ROUTE] Calling AIMappingService.generateFieldMappings...');
+      
+      // Generate AI mappings with proper timeout handling
       const mappingAnalysis = await AIMappingService.generateFieldMappings(
         sourceFile.detectedSchema as any,
         targetFile.detectedSchema as any
       );
 
+      console.log('[ROUTE] AI mapping complete, saving to database...');
+      
       // Clear existing mappings
       await storage.deleteMappingsByProject(projectId);
 
@@ -433,13 +532,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
+      console.log('[ROUTE] Successfully saved mappings, returning response');
+
       res.json({
         analysis: mappingAnalysis,
         mappings: savedMappings,
       });
 
     } catch (error) {
-      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('[ROUTE] Error in generate-mappings:', error);
+      
+      // Send appropriate error response
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Check if response has already been sent
+      if (!res.headersSent) {
+        res.status(500).json({ message: errorMessage });
+      }
     }
   });
 
@@ -567,8 +676,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Download mapping table as CSV
-  app.get("/api/projects/:id/download/mapping-table", async (req, res) => {
+  app.get("/api/projects/:id/download/mapping-table", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const mappings = await storage.getMappingsByProject(req.params.id);
       
       if (mappings.length === 0) {
@@ -576,6 +694,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "No field mappings found. Generate mappings first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       // Generate CSV content
       const csvHeader = "Source Field,Target Field,Mapping Type,Confidence,Transformation\n";
@@ -597,8 +718,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Download mapping documentation as PDF
-  app.get("/api/projects/:id/download/documentation", async (req, res) => {
+  app.get("/api/projects/:id/download/documentation", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const project = await storage.getProject(req.params.id);
       const mappings = await storage.getMappingsByProject(req.params.id);
       const files = await storage.getFilesByProject(req.params.id);
@@ -608,6 +738,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "No field mappings found. Generate mappings first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       const sourceFile = files.find(f => f.systemType === "source");
       const targetFile = files.find(f => f.systemType === "target");
@@ -828,8 +961,17 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   });
 
   // Download generated XSLT file
-  app.get("/api/projects/:id/download/xslt", async (req, res) => {
+  app.get("/api/projects/:id/download/xslt", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const xsltPath = path.join('uploads', 'generated', req.params.id, 'transformation.xsl');
       
       if (!fs.existsSync(xsltPath)) {
@@ -837,6 +979,9 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
           message: "XSLT file not found. Generate transformation files first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       res.setHeader('Content-Type', 'application/xml');
       res.setHeader('Content-Disposition', 'attachment; filename="transformation.xsl"');
@@ -847,8 +992,17 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   });
 
   // Download generated DataWeave file
-  app.get("/api/projects/:id/download/dataweave", async (req, res) => {
+  app.get("/api/projects/:id/download/dataweave", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const dataWeavePath = path.join('uploads', 'generated', req.params.id, 'transformation.dwl');
       
       if (!fs.existsSync(dataWeavePath)) {
@@ -856,6 +1010,9 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
           message: "DataWeave file not found. Generate transformation files first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       res.setHeader('Content-Type', 'text/plain');
       res.setHeader('Content-Disposition', 'attachment; filename="transformation.dwl"');
@@ -866,8 +1023,17 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   });
 
   // Download generated mapping file (CSV)
-  app.get("/api/projects/:id/download/mapping-file", async (req, res) => {
+  app.get("/api/projects/:id/download/mapping-file", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const mappingPath = path.join('uploads', 'generated', req.params.id, 'field-mappings.csv');
       
       if (!fs.existsSync(mappingPath)) {
@@ -875,6 +1041,9 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
           message: "Mapping file not found. Generate transformation files first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="field-mappings.csv"');
@@ -885,8 +1054,17 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   });
 
   // Download generated mapping document
-  app.get("/api/projects/:id/download/mapping-document", async (req, res) => {
+  app.get("/api/projects/:id/download/mapping-document", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const documentPath = path.join('uploads', 'generated', req.params.id, 'mapping-documentation.txt');
       
       if (!fs.existsSync(documentPath)) {
@@ -894,6 +1072,9 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
           message: "Mapping document not found. Generate transformation files first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       res.setHeader('Content-Type', 'text/plain');
       res.setHeader('Content-Disposition', 'attachment; filename="mapping-documentation.txt"');
@@ -904,8 +1085,17 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
   });
 
   // Legacy download endpoints (keeping for compatibility)
-  app.get("/api/projects/:id/download/mapping-table", async (req, res) => {
+  app.get("/api/projects/:id/download/mapping-table", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const mappingPath = path.join('uploads', 'generated', req.params.id, 'field-mappings.csv');
       
       if (!fs.existsSync(mappingPath)) {
@@ -913,6 +1103,9 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
           message: "Mapping file not found. Generate transformation files first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="field-mappings.csv"');
@@ -922,8 +1115,17 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
     }
   });
 
-  app.get("/api/projects/:id/download/documentation", async (req, res) => {
+  app.get("/api/projects/:id/download/documentation", isAuthenticated, async (req: any, res) => {
     try {
+      // Check download limits
+      const downloadCheck = await SubscriptionPolicyService.canDownload(req.user);
+      if (!downloadCheck.allowed) {
+        return res.status(403).json({ 
+          message: downloadCheck.message,
+          remaining: downloadCheck.remaining || 0 
+        });
+      }
+
       const documentPath = path.join('uploads', 'generated', req.params.id, 'mapping-documentation.txt');
       
       if (!fs.existsSync(documentPath)) {
@@ -931,6 +1133,9 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
           message: "Documentation not found. Generate transformation files first." 
         });
       }
+
+      // Increment download counter
+      await SubscriptionPolicyService.incrementDownloadCounter(req.user.id);
 
       res.setHeader('Content-Type', 'text/plain');
       res.setHeader('Content-Disposition', 'attachment; filename="mapping-documentation.txt"');

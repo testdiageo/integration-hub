@@ -1,17 +1,20 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRightLeft, Menu, X } from "lucide-react";
+import { ArrowRightLeft, Menu, X, LogIn, LogOut, User } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isLoading, isAuthenticated, isPaidUser, isAdmin, logoutMutation } = useAuth();
 
   const navItems = [
     { path: "/", label: "Home" },
     { path: "/hub", label: "Integration Hub" },
     { path: "/blog", label: "Blog" },
     { path: "/pricing", label: "Pricing" },
+    ...(isAdmin ? [{ path: "/admin", label: "Admin" }] : []),
   ];
 
   return (
@@ -24,7 +27,7 @@ export function Navigation() {
               <ArrowRightLeft className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              IntegrationHub
+              Connetly
             </span>
           </Link>
 
@@ -42,9 +45,38 @@ export function Navigation() {
                 {item.label}
               </Link>
             ))}
-            <Button asChild data-testid="button-get-started">
-              <Link href="/hub">Get Started</Link>
-            </Button>
+            
+            {!isLoading && !isAuthenticated && (
+              <Button asChild data-testid="button-login">
+                <Link href="/auth">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Log In
+                </Link>
+              </Button>
+            )}
+            
+            {isAuthenticated && (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-muted-foreground" data-testid="text-username">
+                  {user?.username}
+                </span>
+                {isPaidUser && (
+                  <span className="text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-full" data-testid="badge-paid">
+                    {user?.subscriptionStatus}
+                  </span>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {logoutMutation.isPending ? "Logging out..." : "Log Out"}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -77,11 +109,43 @@ export function Navigation() {
                 {item.label}
               </Link>
             ))}
-            <Button className="w-full" asChild data-testid="button-mobile-get-started">
-              <Link href="/hub" onClick={() => setMobileMenuOpen(false)}>
-                Get Started
-              </Link>
-            </Button>
+            
+            {!isLoading && !isAuthenticated && (
+              <Button className="w-full" asChild data-testid="button-mobile-login">
+                <Link href="/auth">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Log In
+                </Link>
+              </Button>
+            )}
+            
+            {isAuthenticated && (
+              <>
+                <div className="px-3 py-2">
+                  <span className="text-sm font-medium" data-testid="text-mobile-username">
+                    {user?.username}
+                  </span>
+                  {isPaidUser && (
+                    <span className="ml-2 text-xs bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-full" data-testid="badge-paid-mobile">
+                      {user?.subscriptionStatus}
+                    </span>
+                  )}
+                </div>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => {
+                    logoutMutation.mutate();
+                    setMobileMenuOpen(false);
+                  }}
+                  disabled={logoutMutation.isPending}
+                  data-testid="button-mobile-logout"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {logoutMutation.isPending ? "Logging out..." : "Log Out"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}

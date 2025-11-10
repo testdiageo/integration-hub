@@ -2,72 +2,114 @@ import { SEOHead } from "@/components/seo-head";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useSubscription } from "@/contexts/subscription-context";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { Check, Gift, Zap, TrendingUp, Crown } from "lucide-react";
 import { Link } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 const pricingPlans = [
   {
-    name: "Starter",
-    description: "Perfect for trying out IntegrationHub",
+    name: "Free",
+    tier: "free",
+    description: "Try Connetly with limited features",
+    price: "0",
+    period: "forever",
+    icon: Gift,
+    badge: null,
+    features: {
+      projects: "0 projects",
+      retention: "0 days",
+      downloads: "No downloads",
+      teamSize: "1 user",
+      support: "Community support",
+      features: [
+        "AI-powered field mapping",
+        "XSLT & DataWeave generation",
+        "Basic validation (5 rows preview)",
+        "CSV, JSON, XML support",
+      ],
+    },
+    cta: "Get Started Free",
+    highlighted: false,
+  },
+  {
+    name: "One-Time",
+    tier: "one-time",
+    description: "Perfect for a single integration project",
     price: "49",
     period: "one-time",
     icon: Zap,
     badge: null,
-    features: [
-      "10 Integration projects",
-      "AI-powered field mapping",
-      "XSLT & DataWeave generation",
-      "Basic validation & testing",
-      "CSV, JSON, XML support",
-      "Email support",
-      "30-day access",
-    ],
-    cta: "Get Started",
+    features: {
+      projects: "3 projects",
+      retention: "60 days",
+      downloads: "3/month",
+      teamSize: "1 user",
+      support: "Email support",
+      features: [
+        "AI-powered field mapping",
+        "XSLT & DataWeave generation",
+        "Standard validation (50 rows preview)",
+        "All file formats supported",
+      ],
+    },
+    cta: "Purchase Once",
     highlighted: false,
   },
   {
-    name: "Professional",
-    description: "For teams building integrations at scale",
-    price: "999",
-    period: "one-time",
-    icon: Sparkles,
+    name: "Monthly",
+    tier: "monthly",
+    description: "For ongoing integration development",
+    price: "99",
+    period: "month",
+    icon: TrendingUp,
     badge: "Most Popular",
-    features: [
-      "Unlimited integration projects",
-      "Advanced AI field mapping",
-      "XSLT & DataWeave generation",
-      "Advanced validation & testing",
-      "All file formats supported",
-      "Priority email & chat support",
-      "Custom transformation templates",
-      "Team collaboration (up to 5 users)",
-      "API access",
-    ],
-    cta: "Start Free Trial",
+    features: {
+      projects: "5 projects",
+      retention: "120 days",
+      downloads: "5/month",
+      teamSize: "1 user",
+      support: "Priority email support",
+      features: [
+        "Advanced AI field mapping",
+        "XSLT & DataWeave generation",
+        "Advanced validation (unlimited preview)",
+        "All file formats supported",
+        "API access",
+        "Custom transformation templates",
+      ],
+    },
+    cta: "Start Monthly",
     highlighted: true,
   },
   {
-    name: "Enterprise",
-    description: "For large organizations with custom needs",
-    price: "1999",
-    period: "one-time",
+    name: "Annual",
+    tier: "annual",
+    description: "Best value for serious integration teams",
+    price: "999",
+    period: "year",
     icon: Crown,
     badge: "Best Value",
-    features: [
-      "Everything in Professional",
-      "Unlimited team members",
-      "Dedicated account manager",
-      "Custom AI model training",
-      "On-premise deployment option",
-      "24/7 phone support",
-      "SLA guarantee",
-      "Custom integrations",
-      "Advanced security & compliance",
-      "Training & onboarding",
-    ],
-    cta: "Contact Sales",
+    features: {
+      projects: "50 projects",
+      retention: "Unlimited",
+      downloads: "50/year",
+      teamSize: "2 users",
+      support: "24/7 priority support",
+      features: [
+        "Everything in Monthly",
+        "2 months free (save $189)",
+        "Dedicated account manager",
+        "Custom AI model training",
+        "SLA guarantee",
+        "Advanced security & compliance",
+        "Training & onboarding",
+        "Custom integrations",
+      ],
+    },
+    cta: "Subscribe Annually",
     highlighted: false,
   },
 ];
@@ -75,51 +117,125 @@ const pricingPlans = [
 const faqs = [
   {
     question: "Can I switch plans later?",
-    answer: "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately for upgrades and at the end of your billing cycle for downgrades.",
+    answer: "Yes! You can upgrade to any paid plan anytime. Paid users can switch between plans. Changes take effect immediately, and you'll be charged/credited the pro-rated difference.",
   },
   {
     question: "What payment methods do you accept?",
-    answer: "We accept all major credit cards (Visa, MasterCard, American Express) and offer invoice billing for annual Enterprise plans.",
+    answer: "We accept all major credit cards (Visa, MasterCard, American Express) via Stripe. Annual plans also support invoice billing for enterprise customers.",
   },
   {
-    question: "Is there a free trial?",
-    answer: "Yes! Professional plan users get a 14-day free trial with full access to all features. No credit card required to start.",
+    question: "What's included in the Free plan?",
+    answer: "The Free plan allows you to explore the platform but does not include project creation or downloads. It's designed to help you understand the platform before subscribing. Upgrade to start creating projects.",
   },
   {
-    question: "What happens after the one-time Starter plan expires?",
-    answer: "After 30 days, you can upgrade to a monthly or annual plan to continue using IntegrationHub, or purchase another Starter plan for additional projects.",
+    question: "How do project limits work?",
+    answer: "Each tier has a maximum number of active projects: One-Time (3), Monthly (5), Annual (50). You can delete old projects to create new ones if you reach your limit. Data retention policies determine how long projects are kept.",
+  },
+  {
+    question: "How do download limits work?",
+    answer: "Download limits reset monthly for One-Time and Monthly plans, and annually for Annual plans. One-Time: 3/month, Monthly: 5/month, Annual: 50/year. Track your usage in your account dashboard.",
+  },
+  {
+    question: "What happens when data retention expires?",
+    answer: "Projects older than your retention period are automatically deleted. One-Time: 60 days, Monthly: 120 days, Annual: Unlimited. Upgrade to extend retention or download your work before expiration.",
   },
   {
     question: "Do you offer refunds?",
-    answer: "Yes, we offer a 30-day money-back guarantee for monthly and annual plans. One-time purchases are non-refundable after project creation.",
+    answer: "Yes, we offer a 30-day money-back guarantee for all paid subscriptions. Simply contact support if you're not satisfied within 30 days of purchase.",
   },
 ];
 
 export default function Pricing() {
-  const { isTrial, isPaid, setSubscriptionStatus } = useSubscription();
+  const { user, isLoading, isAuthenticated, isPaidUser } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleActivatePlan = (planName: string) => {
-    setSubscriptionStatus("paid");
-    toast({
-      title: "✅ Plan Activated!",
-      description: `${planName} plan is now active. All features unlocked!`,
-    });
+  const subscribeMutation = useMutation({
+    mutationFn: async (tier: string) => {
+      return await apiRequest("/api/auth/subscribe", "POST", { tier });
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "✅ Subscription Activated!",
+        description: "Your subscription is now active. All features unlocked!",
+      });
+      
+      // Redirect to hub after successful subscription
+      setTimeout(() => {
+        window.location.href = "/hub";
+      }, 1500);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to activate subscription",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSelectPlan = (tier: string, planName: string) => {
+    // Check if user is logged in
+    if (!isAuthenticated) {
+      // Store the intended plan in sessionStorage for post-login redirect
+      sessionStorage.setItem('intendedPlan', tier);
+      // Redirect to auth with return URL
+      window.location.href = "/auth?returnTo=/pricing";
+      return;
+    }
+    
+    // Check if user already has this plan
+    if (user?.subscriptionStatus === tier) {
+      toast({
+        title: "Already Subscribed",
+        description: `You already have the ${planName} plan active.`,
+        variant: "default",
+      });
+      return;
+    }
+    
+    // Handle plan changes/upgrades
+    const currentTierOrder = { free: 0, 'one-time': 1, monthly: 2, annual: 3 };
+    const currentOrder = currentTierOrder[user?.subscriptionStatus as keyof typeof currentTierOrder] || 0;
+    const newOrder = currentTierOrder[tier as keyof typeof currentTierOrder] || 0;
+    
+    let actionType = "activate";
+    if (currentOrder < newOrder) {
+      actionType = "upgrade";
+    } else if (currentOrder > newOrder) {
+      actionType = "downgrade";
+    }
+    
+    // In production, this would integrate with Stripe or payment gateway
+    // For now, we'll just show a confirmation and proceed
+    if (tier === 'free' && user?.subscriptionStatus !== 'free') {
+      // Downgrade confirmation
+      const confirmed = window.confirm(
+        `Are you sure you want to downgrade to the Free plan? You'll lose access to paid features.`
+      );
+      if (!confirmed) return;
+    }
+    
+    subscribeMutation.mutate(tier);
   };
 
-  const handleStartTrial = () => {
-    setSubscriptionStatus("trial");
-    toast({
-      title: "Free Trial Started",
-      description: "You're now on a free trial with limited features.",
-    });
+  const getCurrentPlanName = () => {
+    if (!user?.subscriptionStatus) return "Free";
+    const statusMap: Record<string, string> = {
+      free: "Free",
+      "one-time": "One-Time",
+      monthly: "Monthly",
+      annual: "Annual",
+    };
+    return statusMap[user.subscriptionStatus] || "Free";
   };
 
   return (
     <>
       <SEOHead
-        title="Pricing Plans - IntegrationHub | Flexible Options for Every Team"
-        description="Choose the perfect IntegrationHub plan for your needs. One-time, monthly, or annual subscriptions with AI-powered field mapping, XSLT & DataWeave generation. Start free trial today."
+        title="Pricing Plans - Connetly | Flexible Options for Every Team"
+        description="Choose the perfect Connetly plan for your needs. Free plan available once per user, one-time purchase, or monthly/annual subscriptions with AI-powered field mapping and code generation."
         keywords="integration pricing, data transformation pricing, XSLT tool pricing, API integration cost, field mapping subscription"
         canonicalUrl={`${window.location.origin}/pricing`}
       />
@@ -133,7 +249,7 @@ export default function Pricing() {
                 Simple, Transparent Pricing
               </h1>
               <p className="text-xl text-muted-foreground" data-testid="text-pricing-description">
-                Choose the plan that fits your needs. All plans include our core AI-powered integration features.
+                Start free, upgrade when you need more. All plans include our core AI-powered integration features.
               </p>
             </div>
           </div>
@@ -142,15 +258,16 @@ export default function Pricing() {
         {/* Pricing Cards */}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
               {pricingPlans.map((plan, idx) => {
                 const Icon = plan.icon;
+                const isCurrentPlan = user?.subscriptionStatus === plan.tier;
                 return (
                   <Card
                     key={idx}
-                    className={`relative overflow-hidden ${
-                      plan.highlighted ? "border-primary shadow-xl scale-105" : ""
-                    }`}
+                    className={`relative overflow-hidden flex flex-col h-full ${
+                      plan.highlighted ? "border-primary shadow-xl md:scale-105" : ""
+                    } ${isCurrentPlan ? "ring-2 ring-primary" : ""}`}
                     data-testid={`card-pricing-${plan.name.toLowerCase()}`}
                   >
                     {plan.badge && (
@@ -181,37 +298,110 @@ export default function Pricing() {
                       </div>
                     </CardHeader>
 
-                    <CardContent>
+                    <CardContent className="flex-1 flex flex-col">
                       <div className="space-y-2 mb-6">
-                        <Button
-                          className="w-full"
-                          variant={plan.highlighted ? "default" : "outline"}
-                          size="lg"
-                          asChild
-                          data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                        >
-                          <Link href="/hub">{plan.cta}</Link>
-                        </Button>
-                        {plan.name !== "Starter" && (
+                        {isCurrentPlan ? (
                           <Button
                             className="w-full"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleActivatePlan(plan.name)}
-                            data-testid={`button-activate-${plan.name.toLowerCase()}`}
+                            variant="default"
+                            size="lg"
+                            disabled
+                            data-testid={`button-current-${plan.name.toLowerCase()}`}
                           >
-                            {isPaid ? "✓ Plan Active" : `Activate ${plan.name}`}
+                            ✓ Current Plan
                           </Button>
+                        ) : (
+                          <>
+                            {(() => {
+                              // Calculate if this is an upgrade or downgrade
+                              const tierOrder = { free: 0, 'one-time': 1, monthly: 2, annual: 3 };
+                              const currentOrder = tierOrder[user?.subscriptionStatus as keyof typeof tierOrder] || 0;
+                              const planOrder = tierOrder[plan.tier as keyof typeof tierOrder] || 0;
+                              
+                              let buttonText = plan.cta;
+                              let isUpgrade = false;
+                              if (isAuthenticated && user?.subscriptionStatus) {
+                                if (planOrder > currentOrder) {
+                                  buttonText = `Upgrade to ${plan.name}`;
+                                  isUpgrade = true;
+                                } else if (planOrder < currentOrder) {
+                                  buttonText = `Downgrade to ${plan.name}`;
+                                } else {
+                                  buttonText = plan.cta;
+                                }
+                              } else if (!isAuthenticated) {
+                                buttonText = "Sign In to Subscribe";
+                              }
+                              
+                              if (plan.tier === "free") {
+                                return (
+                                  <Button
+                                    className="w-full"
+                                    variant="outline"
+                                    size="lg"
+                                    asChild
+                                    data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                                  >
+                                    <Link href={isAuthenticated ? "/hub" : "/auth"}>
+                                      {isAuthenticated ? "Access Hub" : "Get Started Free"}
+                                    </Link>
+                                  </Button>
+                                );
+                              }
+                              
+                              return (
+                                <Button
+                                  className="w-full"
+                                  variant="outline"
+                                  size="lg"
+                                  onClick={() => handleSelectPlan(plan.tier, plan.name)}
+                                  disabled={subscribeMutation.isPending}
+                                  data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                                >
+                                  {subscribeMutation.isPending ? "Processing..." : buttonText}
+                                </Button>
+                              );
+                            })()}
+                          </>
                         )}
                       </div>
 
-                      <div className="space-y-3">
-                        {plan.features.map((feature, featureIdx) => (
-                          <div key={featureIdx} className="flex items-start gap-3" data-testid={`feature-${plan.name.toLowerCase()}-${featureIdx}`}>
-                            <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                            <span className="text-sm text-muted-foreground">{feature}</span>
+                      <div className="space-y-4">
+                        {/* Key Limits */}
+                        <div className="space-y-2 pb-4">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Projects</span>
+                            <span className="font-semibold">{plan.features.projects}</span>
                           </div>
-                        ))}
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Retention</span>
+                            <span className="font-semibold">{plan.features.retention}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Downloads</span>
+                            <span className="font-semibold">{plan.features.downloads}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Team Size</span>
+                            <span className="font-semibold">{plan.features.teamSize}</span>
+                          </div>
+                        </div>
+
+                        {/* Features List */}
+                        <div className="space-y-3">
+                          {plan.features.features.map((feature: string, featureIdx: number) => (
+                            <div key={featureIdx} className="flex items-start gap-3" data-testid={`feature-${plan.name.toLowerCase()}-${featureIdx}`}>
+                              <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                              <span className="text-sm text-muted-foreground">{feature}</span>
+                            </div>
+                          ))}
+                          
+                          {/* Support */}
+                          <div className="flex items-start gap-3 pt-2">
+                            <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                            <span className="text-sm font-medium">{plan.features.support}</span>
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -221,8 +411,113 @@ export default function Pricing() {
           </div>
         </section>
 
-        {/* FAQ Section */}
+        {/* Feature Comparison Table */}
         <section className="py-16 bg-muted/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center mb-12" data-testid="heading-comparison">
+              Detailed Feature Comparison
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse bg-card rounded-lg overflow-hidden shadow-lg">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="p-4 text-left font-semibold">Feature</th>
+                    <th className="p-4 text-center font-semibold">Free</th>
+                    <th className="p-4 text-center font-semibold">One-Time</th>
+                    <th className="p-4 text-center font-semibold">Monthly</th>
+                    <th className="p-4 text-center font-semibold bg-primary/10">Annual</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  <tr>
+                    <td className="p-4 font-medium">Projects</td>
+                    <td className="p-4 text-center">0</td>
+                    <td className="p-4 text-center">3</td>
+                    <td className="p-4 text-center">5</td>
+                    <td className="p-4 text-center bg-primary/5">50</td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">Data Retention</td>
+                    <td className="p-4 text-center">0 days</td>
+                    <td className="p-4 text-center">60 days</td>
+                    <td className="p-4 text-center">120 days</td>
+                    <td className="p-4 text-center bg-primary/5">Unlimited</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">Downloads</td>
+                    <td className="p-4 text-center">
+                      <span className="text-destructive">❌</span>
+                    </td>
+                    <td className="p-4 text-center">3/month</td>
+                    <td className="p-4 text-center">5/month</td>
+                    <td className="p-4 text-center bg-primary/5">50/year</td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">Team Size</td>
+                    <td className="p-4 text-center">1 user</td>
+                    <td className="p-4 text-center">1 user</td>
+                    <td className="p-4 text-center">1 user</td>
+                    <td className="p-4 text-center bg-primary/5">2 users</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">AI-Powered Field Mapping</td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center bg-primary/5">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">XSLT & DataWeave Generation</td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                    <td className="p-4 text-center bg-primary/5">
+                      <Check className="h-5 w-5 text-primary mx-auto" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">Validation Preview</td>
+                    <td className="p-4 text-center text-sm">5 rows</td>
+                    <td className="p-4 text-center text-sm">50 rows</td>
+                    <td className="p-4 text-center text-sm">Unlimited</td>
+                    <td className="p-4 text-center text-sm bg-primary/5">Unlimited</td>
+                  </tr>
+                  <tr className="bg-muted/30">
+                    <td className="p-4 font-medium">File Format Support</td>
+                    <td className="p-4 text-center text-sm">CSV, JSON, XML</td>
+                    <td className="p-4 text-center text-sm">All formats</td>
+                    <td className="p-4 text-center text-sm">All formats</td>
+                    <td className="p-4 text-center text-sm bg-primary/5">All formats</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium">Support</td>
+                    <td className="p-4 text-center text-sm">Community</td>
+                    <td className="p-4 text-center text-sm">Email</td>
+                    <td className="p-4 text-center text-sm">Priority Email</td>
+                    <td className="p-4 text-center text-sm bg-primary/5">24/7 Priority</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-16">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-center mb-12" data-testid="heading-faq">
               Frequently Asked Questions
@@ -247,32 +542,33 @@ export default function Pricing() {
         </section>
 
         {/* Subscription Status */}
-        <section className="py-8 bg-muted/20">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Card>
-              <CardContent className="py-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">Current Status</h3>
-                    <p className="text-muted-foreground text-sm">
-                      {isPaid ? "You have full access to all features" : "You're on a free trial with limited features"}
-                    </p>
+        {isAuthenticated && (
+          <section className="py-8 bg-muted/20">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              <Card>
+                <CardContent className="py-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg" data-testid="text-current-status">Current Status</h3>
+                      <p className="text-muted-foreground text-sm" data-testid="text-status-description">
+                        You're on the {getCurrentPlanName()} plan
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge 
+                        variant={user?.subscriptionStatus === "free" ? "secondary" : "default"} 
+                        className="text-sm"
+                        data-testid="badge-current-plan"
+                      >
+                        {getCurrentPlanName()}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={isPaid ? "default" : "secondary"} className="text-sm">
-                      {isPaid ? "Pro User" : "Free Trial"}
-                    </Badge>
-                    {isPaid && (
-                      <Button variant="outline" size="sm" onClick={handleStartTrial} data-testid="button-switch-to-trial">
-                        Switch to Trial (Demo)
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        )}
 
         {/* CTA Section */}
         <section className="py-16">
