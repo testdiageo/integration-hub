@@ -16,59 +16,56 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Simple request logger
+// Simple request logger for API routes
 app.use((req, res, next) => {
   const start = Date.now();
   const originalJson = res.json;
   res.json = function (body, ...args) {
     const duration = Date.now() - start;
-    console.log(`[${req.method}] ${req.path} ${res.statusCode} in ${duration}ms`);
-    return originalJson.apply(this, [body, ...args]);
-  };
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+      if (logLine.length > 80) logLine = logLine.slice(0, 79) + "…";
+      log(logLine);
+    }
+  });
+
   next();
 });
 
 (async () => {
   const server = await registerRoutes(app);
 
-  const env = process.env.NODE_ENV || "production";
+  // Global error handler
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    res.status(status).json({ message });
+    throw err;
+  });
 
-  if (env === "development") {
-    console.log("🚀 Running in development mode (Vite middleware active)");
+  // Only setup Vite in development
+  if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     console.log("🏗️ Running in production mode (serving static build)");
     serveStatic(app);
   }
 
+  // Use Railway’s PORT env var (it injects this automatically)
   const port = parseInt(process.env.PORT || "5000", 10);
-  const host = "0.0.0.0";
+  const host = "0.0.0.0"; // must be 0.0.0.0 for Railway
 
-  server.listen({ port, host }, () => {
-    console.log(`🌐 Server running on http://${host}:${port}`);
-    if (process.env.RAILWAY_ENVIRONMENT) {
-      console.log(`🏗️ Railway environment: ${process.env.RAILWAY_ENVIRONMENT}`);
+  server.listen(
+    { port, host, reusePort: true },
+    () => {
+      log(`🚀 Server running in ${app.get("env")} mode`);
+      log(`🌐 Listening on http://${host}:${port}`);
+      if (process.env.RAILWAY_ENVIRONMENT) {
+        log(`🏗️  Running on Railway environment: ${process.env.RAILWAY_ENVIRONMENT}`);
+      }
     }
-    
-    // Start scheduled cleanup job (runs every 24 hours)
-    const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    
-    // Run cleanup on startup (after a 1-minute delay to let server initialize)
-    setTimeout(() => {
-      console.log('🧹 Running initial cleanup job...');
-      SubscriptionPolicyService.runScheduledCleanup().catch(error => {
-        console.error('❌ Initial cleanup job failed:', error);
-      });
-    }, 60 * 1000); // 1 minute delay
-    
-    // Schedule recurring cleanup
-    setInterval(() => {
-      console.log('🧹 Running scheduled cleanup job...');
-      SubscriptionPolicyService.runScheduledCleanup().catch(error => {
-        console.error('❌ Scheduled cleanup job failed:', error);
-      });
-    }, CLEANUP_INTERVAL);
-    
-    console.log('🧹 Cleanup job scheduled (runs every 24 hours)');
-  });
+  );
 })();
