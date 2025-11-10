@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSubscription } from "@/contexts/subscription-context";
+import { DownloadAuthDialog } from "@/components/download-auth-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Code, 
   Play, 
@@ -17,7 +21,8 @@ import {
   CheckCircle,
   AlertCircle,
   Plus,
-  Minus
+  Minus,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,12 +37,26 @@ export function TransformationPreview({
   onProceedToIntegration,
   onBackToMapping,
 }: TransformationPreviewProps) {
+  const { isTrial, isPaid } = useSubscription();
+  const { user, isPaidUser } = useAuth();
+  const { toast } = useToast();
+  
   const [integrationCode, setIntegrationCode] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [filesGenerated, setFilesGenerated] = useState<any>(null);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [authDialogData, setAuthDialogData] = useState<{
+    message?: string;
+    remaining?: number;
+    resetDate?: string;
+  }>({});
+  const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
+
+  // Check if user is free tier
+  const isFreeUser = user?.subscriptionStatus === 'free';
 
   useEffect(() => {
     generateCode();
@@ -99,6 +118,88 @@ export function TransformationPreview({
       setError(err instanceof Error ? err.message : "Test failed");
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const handleDownload = async (fileType: string) => {
+    // Show dialog immediately for free users
+    if (isFreeUser || isTrial) {
+      setAuthDialogData({
+        message: "Upgrade to download files. Free users can preview and test all features but cannot download generated code.",
+      });
+      setAuthDialogOpen(true);
+      return;
+    }
+
+    let endpoint = '';
+    let filename = '';
+    
+    switch (fileType) {
+      case 'xslt':
+        endpoint = `/api/projects/${projectId}/download/xslt`;
+        filename = 'transformation.xsl';
+        break;
+      case 'mapping':
+        endpoint = `/api/projects/${projectId}/download/mapping-file`;
+        filename = 'field-mappings.csv';
+        break;
+      case 'documentation':
+        endpoint = `/api/projects/${projectId}/download/mapping-document`;
+        filename = 'mapping-documentation.txt';
+        break;
+    }
+    
+    if (!endpoint) return;
+
+    try {
+      setDownloadingFile(fileType);
+
+      // Make authenticated request
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        credentials: 'include', // Important for session cookies
+      });
+
+      if (response.status === 403) {
+        // Authorization failed - show friendly dialog
+        const errorData = await response.json();
+        setAuthDialogData({
+          message: errorData.message,
+          remaining: errorData.remaining,
+        });
+        setAuthDialogOpen(true);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`);
+      }
+
+      // Download successful - create blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Show success toast
+      toast({
+        title: "Download Started",
+        description: `${filename} is downloading...`,
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download Failed",
+        description: error instanceof Error ? error.message : "An error occurred while downloading the file",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingFile(null);
     }
   };
 
@@ -217,30 +318,57 @@ export function TransformationPreview({
               <div className="flex items-center space-x-2">
                 <Button 
                   variant="outline"
-                  onClick={() => window.open(`/api/projects/${projectId}/download/xslt`, '_blank')}
+                  onClick={() => handleDownload('xslt')}
                   data-testid="button-download-xslt"
-                  disabled={!filesGenerated}
+                  disabled={!filesGenerated || downloadingFile === 'xslt'}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  XSLT
+                  {downloadingFile === 'xslt' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      XSLT
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => window.open(`/api/projects/${projectId}/download/mapping-file`, '_blank')}
+                  onClick={() => handleDownload('mapping')}
                   data-testid="button-download-mapping"
-                  disabled={!filesGenerated}
+                  disabled={!filesGenerated || downloadingFile === 'mapping'}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Mapping CSV
+                  {downloadingFile === 'mapping' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Mapping CSV
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => window.open(`/api/projects/${projectId}/download/mapping-document`, '_blank')}
+                  onClick={() => handleDownload('documentation')}
                   data-testid="button-download-documentation"
-                  disabled={!filesGenerated}
+                  disabled={!filesGenerated || downloadingFile === 'documentation'}
                 >
-                  <Download className="mr-2 h-4 w-4" />
-                  Documentation
+                  {downloadingFile === 'documentation' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Documentation
+                    </>
+                  )}
                 </Button>
               </div>
               <Button 
@@ -452,6 +580,14 @@ export function TransformationPreview({
           </Button>
         </div>
       </div>
+
+      {/* Authorization Dialog for Free Users */}
+      <DownloadAuthDialog 
+        open={authDialogOpen}
+        onOpenChange={setAuthDialogOpen}
+        message={authDialogData.message}
+        remaining={authDialogData.remaining}
+      />
     </div>
   );
 }
