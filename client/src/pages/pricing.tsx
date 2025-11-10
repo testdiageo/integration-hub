@@ -258,14 +258,14 @@ export default function Pricing() {
         {/* Pricing Cards */}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {pricingPlans.map((plan, idx) => {
                 const Icon = plan.icon;
                 const isCurrentPlan = user?.subscriptionStatus === plan.tier;
                 return (
                   <Card
                     key={idx}
-                    className={`relative overflow-hidden flex flex-col h-full ${
+                    className={`relative overflow-hidden flex flex-col ${
                       plan.highlighted ? "border-primary shadow-xl md:scale-105" : ""
                     } ${isCurrentPlan ? "ring-2 ring-primary" : ""}`}
                     data-testid={`card-pricing-${plan.name.toLowerCase()}`}
@@ -298,108 +298,110 @@ export default function Pricing() {
                       </div>
                     </CardHeader>
 
-                    <CardContent className="flex-1 flex flex-col">
-                      <div className="space-y-2 mb-6">
-                        {isCurrentPlan ? (
-                          <Button
-                            className="w-full"
-                            variant="default"
-                            size="lg"
-                            disabled
-                            data-testid={`button-current-${plan.name.toLowerCase()}`}
-                          >
-                            ✓ Current Plan
-                          </Button>
-                        ) : (
-                          <>
-                            {(() => {
-                              // Calculate if this is an upgrade or downgrade
-                              const tierOrder = { free: 0, 'one-time': 1, monthly: 2, annual: 3 };
-                              const currentOrder = tierOrder[user?.subscriptionStatus as keyof typeof tierOrder] || 0;
-                              const planOrder = tierOrder[plan.tier as keyof typeof tierOrder] || 0;
-                              
-                              let buttonText = plan.cta;
-                              let isUpgrade = false;
-                              if (isAuthenticated && user?.subscriptionStatus) {
-                                if (planOrder > currentOrder) {
-                                  buttonText = `Upgrade to ${plan.name}`;
-                                  isUpgrade = true;
-                                } else if (planOrder < currentOrder) {
-                                  buttonText = `Downgrade to ${plan.name}`;
-                                } else {
-                                  buttonText = plan.cta;
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                      <div className="flex-1">
+                        <div className="mb-6">
+                          {isCurrentPlan ? (
+                            <Button
+                              className="w-full"
+                              variant="outline"
+                              size="lg"
+                              disabled
+                              data-testid={`button-current-${plan.name.toLowerCase()}`}
+                            >
+                              ✓ Current Plan
+                            </Button>
+                          ) : (
+                            <>
+                              {(() => {
+                                // Calculate if this is an upgrade or downgrade
+                                const tierOrder = { free: 0, 'one-time': 1, monthly: 2, annual: 3 };
+                                const currentOrder = tierOrder[user?.subscriptionStatus as keyof typeof tierOrder] || 0;
+                                const planOrder = tierOrder[plan.tier as keyof typeof tierOrder] || 0;
+                                
+                                let buttonText = plan.cta;
+                                let isUpgrade = false;
+                                if (isAuthenticated && user?.subscriptionStatus) {
+                                  if (planOrder > currentOrder) {
+                                    buttonText = `Upgrade to ${plan.name}`;
+                                    isUpgrade = true;
+                                  } else if (planOrder < currentOrder) {
+                                    buttonText = `Downgrade to ${plan.name}`;
+                                  } else {
+                                    buttonText = plan.cta;
+                                  }
+                                } else if (!isAuthenticated) {
+                                  buttonText = "Sign In to Subscribe";
                                 }
-                              } else if (!isAuthenticated) {
-                                buttonText = "Sign In to Subscribe";
-                              }
-                              
-                              if (plan.tier === "free") {
+                                
+                                if (plan.tier === "free") {
+                                  return (
+                                    <Button
+                                      className="w-full"
+                                      variant="outline"
+                                      size="lg"
+                                      asChild
+                                      data-testid={`button-cta-${plan.name.toLowerCase()}`}
+                                    >
+                                      <Link href={isAuthenticated ? "/hub" : "/auth"}>
+                                        {isAuthenticated ? "Access Hub" : "Get Started Free"}
+                                      </Link>
+                                    </Button>
+                                  );
+                                }
+                                
                                 return (
                                   <Button
                                     className="w-full"
                                     variant="outline"
                                     size="lg"
-                                    asChild
+                                    onClick={() => handleSelectPlan(plan.tier, plan.name)}
+                                    disabled={subscribeMutation.isPending}
                                     data-testid={`button-cta-${plan.name.toLowerCase()}`}
                                   >
-                                    <Link href={isAuthenticated ? "/hub" : "/auth"}>
-                                      {isAuthenticated ? "Access Hub" : "Get Started Free"}
-                                    </Link>
+                                    {subscribeMutation.isPending ? "Processing..." : buttonText}
                                   </Button>
                                 );
-                              }
-                              
-                              return (
-                                <Button
-                                  className="w-full"
-                                  variant="outline"
-                                  size="lg"
-                                  onClick={() => handleSelectPlan(plan.tier, plan.name)}
-                                  disabled={subscribeMutation.isPending}
-                                  data-testid={`button-cta-${plan.name.toLowerCase()}`}
-                                >
-                                  {subscribeMutation.isPending ? "Processing..." : buttonText}
-                                </Button>
-                              );
-                            })()}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="space-y-4">
-                        {/* Key Limits */}
-                        <div className="space-y-2 pb-4">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Projects</span>
-                            <span className="font-semibold">{plan.features.projects}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Retention</span>
-                            <span className="font-semibold">{plan.features.retention}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Downloads</span>
-                            <span className="font-semibold">{plan.features.downloads}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Team Size</span>
-                            <span className="font-semibold">{plan.features.teamSize}</span>
-                          </div>
+                              })()}
+                            </>
+                          )}
                         </div>
 
-                        {/* Features List */}
-                        <div className="space-y-3">
-                          {plan.features.features.map((feature: string, featureIdx: number) => (
-                            <div key={featureIdx} className="flex items-start gap-3" data-testid={`feature-${plan.name.toLowerCase()}-${featureIdx}`}>
-                              <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                              <span className="text-sm text-muted-foreground">{feature}</span>
+                        <div className="space-y-4">
+                          {/* Key Limits */}
+                          <div className="space-y-2 pb-4 border-b">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Projects</span>
+                              <span className="font-semibold">{plan.features.projects}</span>
                             </div>
-                          ))}
-                          
-                          {/* Support */}
-                          <div className="flex items-start gap-3 pt-2">
-                            <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                            <span className="text-sm font-medium">{plan.features.support}</span>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Retention</span>
+                              <span className="font-semibold">{plan.features.retention}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Downloads</span>
+                              <span className="font-semibold">{plan.features.downloads}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Team Size</span>
+                              <span className="font-semibold">{plan.features.teamSize}</span>
+                            </div>
+                          </div>
+
+                          {/* Features List */}
+                          <div className="space-y-3">
+                            {plan.features.features.map((feature: string, featureIdx: number) => (
+                              <div key={featureIdx} className="flex items-start gap-3" data-testid={`feature-${plan.name.toLowerCase()}-${featureIdx}`}>
+                                <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                                <span className="text-sm text-muted-foreground">{feature}</span>
+                              </div>
+                            ))}
+                            
+                            {/* Support */}
+                            <div className="flex items-start gap-3 pt-2">
+                              <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                              <span className="text-sm font-medium">{plan.features.support}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
