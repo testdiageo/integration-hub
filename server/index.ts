@@ -62,10 +62,10 @@ app.use((req, res, next) => {
   server.listen(
     { port, host, reusePort: true },
     () => {
-      log(`🚀 Server running in ${app.get("env")} mode`);
-      log(`🌐 Listening on http://${host}:${port}`);
+      console.log(`🚀 Server running in ${app.get("env")} mode`);
+      console.log(`🌐 Listening on http://${host}:${port}`);
       if (process.env.RAILWAY_ENVIRONMENT) {
-        log(`🏗️  Running on Railway environment: ${process.env.RAILWAY_ENVIRONMENT}`);
+        console.log(`🏗️  Running on Railway environment: ${process.env.RAILWAY_ENVIRONMENT}`);
       }
     }
   );
