@@ -186,6 +186,37 @@ export default function Connetly() {
     createProjectMutation.mutate();
   };
 
+  // Save project mutation
+  const saveProjectMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest(`/api/projects/${currentProject?.id}/save`, "POST");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save project');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      alert('Project saved successfully!');
+    },
+    onError: (error: any) => {
+      // Check if it's an upgrade required error
+      if (error.message.includes('upgrade') || error.message.includes('paid plan')) {
+        // Show upgrade prompt
+        if (confirm(`${error.message}\n\nWould you like to view our pricing plans?`)) {
+          window.location.href = '/pricing';
+        }
+      } else {
+        alert(`Failed to save project: ${error.message}`);
+      }
+    },
+  });
+
+  const handleSaveProject = () => {
+    if (!currentProject) return;
+    saveProjectMutation.mutate();
+  };
+
   // Get analysis data from mappings
   const analysisData = (mappings as FieldMapping[]).length > 0 ? {
     overallConfidence: Math.round(
@@ -274,9 +305,15 @@ export default function Connetly() {
                 <Badge variant="outline" className="capitalize" data-testid="project-status">
                   {currentProject.status}
                 </Badge>
-                <Button variant="outline" size="sm" data-testid="button-save-project">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  data-testid="button-save-project"
+                  onClick={handleSaveProject}
+                  disabled={saveProjectMutation.isPending}
+                >
                   <Save className="h-4 w-4 mr-2" />
-                  Save
+                  {saveProjectMutation.isPending ? 'Saving...' : 'Save'}
                 </Button>
                 <Button variant="outline" size="sm" data-testid="button-reset-project" onClick={handleNewProject}>
                   <RefreshCcw className="h-4 w-4 mr-2" />

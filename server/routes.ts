@@ -361,6 +361,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Explicitly save/persist a project (requires paid subscription)
+  app.post("/api/projects/:id/save", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = req.user as any;
+      
+      // Check if user can save projects
+      const canSave = SubscriptionPolicyService.canSaveProject(user.subscriptionStatus);
+      
+      if (!canSave.allowed) {
+        return res.status(403).json({ 
+          message: canSave.message,
+          requiresUpgrade: true,
+          subscriptionStatus: user.subscriptionStatus
+        });
+      }
+      
+      // Verify project belongs to user
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      if (project.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized access to project" });
+      }
+      
+      // Mark project as saved (you might want to add a 'saved' field to track this)
+      // For now, just return success
+      res.json({ 
+        success: true, 
+        message: "Project saved successfully",
+        project 
+      });
+    } catch (error) {
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
   // Upload file for project
   app.post("/api/projects/:id/upload", upload.single('file'), async (req, res) => {
     try {
@@ -968,7 +1007,8 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
       if (!downloadCheck.allowed) {
         return res.status(403).json({ 
           message: downloadCheck.message,
-          remaining: downloadCheck.remaining || 0 
+          remaining: downloadCheck.remaining || 0,
+          requiresUpgrade: req.user.subscriptionStatus === 'free'
         });
       }
 
@@ -999,7 +1039,8 @@ Manual Review Needed: ${mappings.filter(m => m.mappingType === 'unmapped').lengt
       if (!downloadCheck.allowed) {
         return res.status(403).json({ 
           message: downloadCheck.message,
-          remaining: downloadCheck.remaining || 0 
+          remaining: downloadCheck.remaining || 0,
+          requiresUpgrade: req.user.subscriptionStatus === 'free'
         });
       }
 

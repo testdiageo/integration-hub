@@ -40,7 +40,7 @@ export function ValidationSuccessStep({
   onBackToValidation 
 }: ValidationSuccessProps) {
   const { isTrial, isPaid } = useSubscription();
-  const { user } = useAuth();
+  const { user, isPaidUser } = useAuth();
   const { toast } = useToast();
   
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
@@ -51,11 +51,14 @@ export function ValidationSuccessStep({
   }>({});
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
 
+  // Check if user is free tier (use actual user data from backend)
+  const isFreeUser = user?.subscriptionStatus === 'free';
+
   const handleDownload = async (fileType: string) => {
-    // Show dialog immediately for trial users
-    if (isTrial) {
+    // Show dialog immediately for free users
+    if (isFreeUser || isTrial) {
       setAuthDialogData({
-        message: "Upgrade to download files. Free users can view files but cannot download them.",
+        message: "Upgrade to download files. Free users can preview and test all features but cannot download generated code.",
       });
       setAuthDialogOpen(true);
       return;
@@ -174,14 +177,14 @@ export function ValidationSuccessStep({
         </CardContent>
       </Card>
 
-      {/* Trial Restriction Message */}
-      {isTrial && (
+      {/* Trial/Free Restriction Message */}
+      {(isFreeUser || isTrial) && (
         <Alert className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200">
           <Crown className="h-4 w-4 text-amber-600" />
           <AlertDescription className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-amber-800 dark:text-amber-200">Downloads are disabled in Free Trial</p>
-              <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">Upgrade to download XSLT, DataWeave, and mapping files</p>
+              <p className="font-medium text-amber-800 dark:text-amber-200">Downloads are disabled for Free users</p>
+              <p className="text-sm text-amber-600 dark:text-amber-300 mt-1">You can preview and test all features. Upgrade to download XSLT, DataWeave, and mapping files</p>
             </div>
             <Button asChild className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700" data-testid="button-upgrade-from-success">
               <Link href="/pricing">
@@ -196,13 +199,13 @@ export function ValidationSuccessStep({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            {isTrial && <Lock className="h-5 w-5 text-muted-foreground" />}
+            {(isFreeUser || isTrial) && <Lock className="h-5 w-5 text-muted-foreground" />}
             <Download className="h-5 w-5" />
             <span>Download Your Files</span>
-            {isTrial && <Badge variant="secondary">Pro Feature</Badge>}
+            {(isFreeUser || isTrial) && <Badge variant="secondary">Pro Feature</Badge>}
           </CardTitle>
           <p className="text-muted-foreground">
-            {isTrial 
+            {(isFreeUser || isTrial)
               ? "Upgrade to download all generated transformation files" 
               : "Download all generated transformation files ready for production deployment"}
           </p>
@@ -228,14 +231,14 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('xslt')}
                   className="w-full bg-blue-600 hover:bg-blue-700"
                   data-testid="button-download-success-xslt"
-                  disabled={isTrial || downloadingFile === 'xslt'}
+                  disabled={(isFreeUser || isTrial) || downloadingFile === 'xslt'}
                 >
                   {downloadingFile === 'xslt' ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Downloading...
                     </>
-                  ) : isTrial ? (
+                  ) : (isFreeUser || isTrial) ? (
                     <>
                       <Lock className="mr-2 h-4 w-4" />
                       Locked
@@ -269,14 +272,14 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('dataweave')}
                   className="w-full bg-amber-600 hover:bg-amber-700"
                   data-testid="button-download-success-dataweave"
-                  disabled={isTrial || downloadingFile === 'dataweave'}
+                  disabled={(isFreeUser || isTrial) || downloadingFile === 'dataweave'}
                 >
                   {downloadingFile === 'dataweave' ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Downloading...
                     </>
-                  ) : isTrial ? (
+                  ) : (isFreeUser || isTrial) ? (
                     <>
                       <Lock className="mr-2 h-4 w-4" />
                       Locked
@@ -310,14 +313,14 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('mapping')}
                   className="w-full bg-green-600 hover:bg-green-700"
                   data-testid="button-download-success-mapping"
-                  disabled={isTrial || downloadingFile === 'mapping'}
+                  disabled={(isFreeUser || isTrial) || downloadingFile === 'mapping'}
                 >
                   {downloadingFile === 'mapping' ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Downloading...
                     </>
-                  ) : isTrial ? (
+                  ) : (isFreeUser || isTrial) ? (
                     <>
                       <Lock className="mr-2 h-4 w-4" />
                       Locked
@@ -351,14 +354,14 @@ export function ValidationSuccessStep({
                   onClick={() => handleDownload('documentation')}
                   className="w-full bg-purple-600 hover:bg-purple-700"
                   data-testid="button-download-success-documentation"
-                  disabled={isTrial || downloadingFile === 'documentation'}
+                  disabled={(isFreeUser || isTrial) || downloadingFile === 'documentation'}
                 >
                   {downloadingFile === 'documentation' ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Downloading...
                     </>
-                  ) : isTrial ? (
+                  ) : (isFreeUser || isTrial) ? (
                     <>
                       <Lock className="mr-2 h-4 w-4" />
                       Locked

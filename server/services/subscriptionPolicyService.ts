@@ -24,8 +24,8 @@ export class SubscriptionPolicyService {
   static getSubscriptionLimits(subscriptionStatus: string): SubscriptionLimits {
     const limits: Record<string, SubscriptionLimits> = {
       free: {
-        maxProjects: 0, // Free users get no projects
-        retentionDays: 0, // No retention
+        maxProjects: 1, // Free users get 1 temporary preview project
+        retentionDays: 0, // No retention - cleaned up on logout
         maxDownloads: 0, // No downloads
         downloadPeriod: 'monthly',
         teamSize: 1,
@@ -80,27 +80,45 @@ export class SubscriptionPolicyService {
       return { allowed: true };
     }
     
-    // No projects allowed
-    if (limits.maxProjects === 0) {
-      return {
-        allowed: false,
-        message: 'Free tier does not include project creation. Please upgrade to a paid plan.',
-        current: userProjects.length,
-        limit: limits.maxProjects,
-      };
-    }
-    
     // Check limit
     if (userProjects.length >= limits.maxProjects) {
+      // Special message for free users
+      if (subscriptionStatus === 'free') {
+        return {
+          allowed: false,
+          message: 'You already have an active preview project. Upgrade to a paid plan to create and save multiple projects.',
+          current: userProjects.length,
+          limit: limits.maxProjects,
+        };
+      }
+      
       return {
         allowed: false,
-        message: `Project limit reached (${limits.maxProjects}). Upgrade for unlimited projects.`,
+        message: `Project limit reached (${limits.maxProjects}). Upgrade for more projects.`,
         current: userProjects.length,
         limit: limits.maxProjects,
       };
     }
     
     return { allowed: true, current: userProjects.length, limit: limits.maxProjects };
+  }
+
+  /**
+   * Check if user can save/persist a project
+   * Free users can use the hub but cannot save projects permanently
+   */
+  static canSaveProject(subscriptionStatus: string): {
+    allowed: boolean;
+    message?: string;
+  } {
+    if (subscriptionStatus === 'free') {
+      return {
+        allowed: false,
+        message: 'Free users can preview and test the hub, but cannot save projects permanently. Upgrade to a paid plan to save your work.',
+      };
+    }
+    
+    return { allowed: true };
   }
 
   /**
